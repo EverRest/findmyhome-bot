@@ -1,0 +1,136 @@
+import { FetchAndParseEmailsUseCase } from './fetch-and-parse-emails.use-case';
+import { mockConfig, mockStepLogger } from '../../../test/helpers/test-utils';
+
+describe('FetchAndParseEmailsUseCase', () => {
+  const gmail = {
+    isConfigured: jest.fn(),
+    fetchSince: jest.fn(),
+  };
+  const parsers = { parse: jest.fn() };
+  const listings = {
+    existsProcessedEmail: jest.fn(),
+    upsertFromDraft: jest.fn(),
+    markEmailProcessed: jest.fn(),
+  };
+  const log = mockStepLogger();
+
+  const useCase = new FetchAndParseEmailsUseCase(
+    gmail,
+    parsers,
+    listings as never,
+    mockConfig(),
+    log as never,
+  );
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('skips when gmail not configured', async () => {
+    gmail.isConfigured.mockReturnValue(false);
+    const r = await useCase.execute(new Date());
+    expect(r.emailsProcessed).toBe(0);
+  });
+
+  it('processes emails and upserts drafts', async () => {
+    gmail.isConfigured.mockReturnValue(true);
+    gmail.fetchSince.mockResolvedValue([
+      {
+        gmailMessageId: 'm1',
+        subject: 'affitto',
+        fromAddress: 'idealista <x@idealista.it>',
+        receivedAt: new Date(),
+        htmlBody:
+          '<a href="https://www.idealista.it/affitto-case/torino/">x</a>',
+        textBody: '',
+      },
+    ]);
+    listings.existsProcessedEmail.mockResolvedValue(false);
+    parsers.parse.mockReturnValue([
+      {
+        canonicalUrl: 'https://www.idealista.it/immobile/1/',
+        rentEur: 750,
+        rawSnippet: '750 €/mese',
+      },
+    ]);
+    listings.upsertFromDraft.mockResolvedValue({
+      isNew: true,
+      priceChanged: false,
+      materialChanged: false,
+    });
+
+    const r = await useCase.execute(new Date());
+    expect(r.emailsProcessed).toBe(1);
+    expect(r.listingsNew).toBe(1);
+  });
+
+  it('updates existing listing without counting as new', async () => {
+    gmail.isConfigured.mockReturnValue(true);
+    gmail.fetchSince.mockResolvedValue([
+      {
+        gmailMessageId: 'm3',
+        subject: 'affitto',
+        fromAddress: 'idealista <x@idealista.it>',
+        receivedAt: new Date(),
+        htmlBody:
+          '<a href="https://www.idealista.it/immobile/2/">750 €/mese</a>',
+        textBody: '',
+      },
+    ]);
+    listings.existsProcessedEmail.mockResolvedValue(false);
+    parsers.parse.mockReturnValue([
+      {
+        canonicalUrl: 'https://www.idealista.it/immobile/2/',
+        rentEur: 750,
+        rawSnippet: '750 €/mese',
+      },
+    ]);
+    listings.upsertFromDraft.mockResolvedValue({
+      isNew: false,
+      priceChanged: false,
+      materialChanged: true,
+    });
+    const r = await useCase.execute(new Date());
+    expect(r.listingsNew).toBe(0);
+    expect(r.duplicatesSkipped).toBe(1);
+  });
+
+  it('skips non-rent drafts from sale-like alerts', async () => {
+    gmail.isConfigured.mockReturnValue(true);
+    gmail.fetchSince.mockResolvedValue([
+      {
+        gmailMessageId: 'm-sale',
+        subject: 'vendita',
+        fromAddress: 'idealista <x@idealista.it>',
+        receivedAt: new Date(),
+        htmlBody:
+          '<a href="https://www.idealista.it/vendita-case/torino/">x</a>',
+        textBody: '',
+      },
+    ]);
+    listings.existsProcessedEmail.mockResolvedValue(false);
+    parsers.parse.mockReturnValue([
+      {
+        canonicalUrl: 'https://www.idealista.it/vendita-case/torino/',
+        rawSnippet: 'vendita',
+      },
+    ]);
+    const r = await useCase.execute(new Date());
+    expect(r.listingsParsed).toBe(0);
+  });
+
+  it('skips already processed emails', async () => {
+    gmail.isConfigured.mockReturnValue(true);
+    gmail.fetchSince.mockResolvedValue([
+      {
+        gmailMessageId: 'm2',
+        subject: 's',
+        fromAddress: 'x',
+        receivedAt: new Date(),
+        htmlBody: '',
+        textBody: '',
+      },
+    ]);
+    listings.existsProcessedEmail.mockResolvedValue(true);
+    const r = await useCase.execute(new Date());
+    expect(r.emailsSkippedAlreadyProcessed).toBe(1);
+  });
+});

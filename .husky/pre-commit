@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+echo "→ lint-staged (eslint + prettier on staged files)"
+npx lint-staged
+
+echo "→ typecheck (tsc)"
+npm run typecheck
+
+echo "→ unit tests + coverage"
+npm run test:ci
+
+echo ""
+echo "Coverage report: coverage/lcov-report/index.html"
+echo "Summary: coverage/coverage-summary.json"

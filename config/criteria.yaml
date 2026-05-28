@@ -1,0 +1,131 @@
+notes: |
+  Family with a child. 2-3 rooms. Turin.
+  Target zones: Cenisia, Cit Turin, Pozzo Strada,
+  San Donato (border), near Piazza Bernini.
+  Rent strictly 300–900 EUR/month; area strictly 50–90 m².
+
+locale: en
+
+hard:
+  roomsMin: 2
+  roomsMax: 5
+  areaMinSqm: 50
+  areaMaxSqm: 90
+  rentMinEur: 300
+  rentMaxEur: 900
+  totalCostMaxEur: 950
+  zones:
+    - name: Cenisia
+      aliases: [cenisia, cit turin, città turin, citta turin]
+    - name: Cit Turin
+      aliases: [cit turin, città turin, citta turin, cit turin]
+    - name: Pozzo Strada
+      aliases: [pozzo strada, pozzostrada]
+    - name: San Donato
+      aliases: [san donato, san donato milanese, confine san donato]
+    - name: Piazza Bernini
+      aliases: [piazza bernini, bernini, via bernini]
+  zoneMatchMode: fuzzy
+  # Extra landmarks (bonus, not required)
+  metroStations:
+    - monte grappa
+    - rivoli
+    - massala
+    - bernini
+    - parco dora
+    - parco pellerina
+
+soft:
+  mustHave:
+    - suitable for a family with a child
+  niceToHave:
+    - close to a park
+    - lift / elevator
+  avoid:
+    - studio
+    - 1 room only
+    - students only / student housing / room for students
+
+scoring:
+  llmWeight: 0.7
+  rulesWeight: 0.3
+  zoneMissPenalty: 20
+
+# One-sentence AI tip shown in Telegram (injected into llmRating prompt as {{aiSuggestionPrompt}})
+telegram:
+  aiSuggestion:
+    prompt: |
+      The JSON "summary" field must be exactly ONE sentence in English (max 30 words).
+      Give a practical tip for this family: why it may fit, main trade-off, or what to verify on viewing.
+      Do not repeat numeric scores, rent, rooms, or m² from the listing data.
+
+# AI rating: 10 criteria × 0–10 → sum 0–100 (see Ollama prompt)
+llmRating:
+  reference:
+    cityCenter: 'Piazza Castello / centro storico, Torino'
+    piazzaRivoli: 'Piazza Rivoli, Torino (Cenisia / Cit Turin area)'
+    targetZones: 'Cenisia, Cit Turin, Pozzo Strada, San Donato, Piazza Bernini'
+    preferredMetro: 'Bernini, Rivoli, Monte Grappa, Massaua, Pozzo Strada, Marcadè'
+  criteria:
+    - key: price
+      label: Price
+      description: 'How well rent (+ condo fee if any) fits the family budget; lower rent in range = higher score'
+    - key: quality
+      label: Quality
+      description: 'Condition, description, photos/details in email, listing credibility'
+    - key: value
+      label: Value
+      description: 'Price / area / location / condition balance'
+    - key: metroProximity
+      label: Metro
+      description: 'Proximity to Turin metro (M1) stations; closer = higher score'
+    - key: centerProximity
+      label: City center
+      description: 'Proximity to {{cityCenter}}; closer = higher score'
+    - key: greenAreas
+      label: Green areas
+      description: 'Parks, Dora river, Parco Dora, Pellerina, Vallette, nearby green space'
+    - key: infrastructure
+      label: Infrastructure
+      description: 'Supermarkets, malls, schools, daycare, pharmacies, transport'
+    - key: quietSafe
+      label: Quiet & safe
+      description: 'Quiet area, no obvious red flags in text; family-friendly'
+    - key: livingArea
+      label: Living area
+      description: 'm² for a family with a child; 50–90 m² ideal; too small/large = lower'
+    - key: piazzaRivoliProximity
+      label: Piazza Rivoli
+      description: 'Proximity to {{piazzaRivoli}}; closer = higher score'
+  prompt: |
+    You score rental apartments in Turin, Italy for a family with a child.
+    Summary for Telegram (locale: {{locale}}):
+    {{aiSuggestionPrompt}}
+
+    Hard limits (already checked in code — do not contradict without strong reason):
+    {{hardCriteria}}
+
+    Geography reference:
+    - City center: {{cityCenter}}
+    - Target zones: {{targetZones}}
+    - Metro (approx.): {{preferredMetro}}
+    - Piazza Rivoli: {{piazzaRivoli}}
+
+    Criteria (JSON key → description):
+    {{criteriaKeys}}
+
+    Listing data (JSON):
+    {{listingJson}}
+
+    Task: score EACH criterion as an integer from 0 to 10 (10 = ideal for this family).
+    For distance criteria (metro, center, Piazza Rivoli): CLOSER = HIGHER score.
+    If data is sparse — infer from address/district and typical Turin geography; do not invent exact meters.
+
+    Return ONLY valid JSON (no markdown), English keys:
+    {{jsonKeys}},
+    "summary": "one sentence per aiSuggestion rules above",
+    "riskLevel": "none" | "low" | "medium" | "high",
+    "riskReasons": []
+
+    Use riskLevel "high" only for obvious scams, western union, WhatsApp-only contact, suspiciously low price.
+    If no risk — riskLevel "none" and riskReasons [].

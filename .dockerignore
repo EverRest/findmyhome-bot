@@ -1,0 +1,69 @@
+# Dependencies and build output (rebuilt in image)
+node_modules
+dist
+coverage
+.nyc_output
+*.tsbuildinfo
+
+# Git, editor, Cursor
+.git
+.gitignore
+.gitattributes
+.husky
+.idea
+.vscode
+.cursor
+
+# Secrets and runtime data (bind mounts)
+.env
+.env.*
+secrets
+data
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Playwright (host-only; install in image if FB scraping in Docker)
+**/ms-playwright
+playwright-report
+test-results
+blob-report
+playwright/.cache
+
+# Docs and markdown (not needed at runtime)
+docs
+*.md
+!README.md
+
+# Tests and fixtures
+test
+**/*.spec.ts
+**/*.e2e-spec.ts
+jest.config.*
+test-results
+
+# Dev / CI scripts (not used by `nest build` or production CMD)
+scripts
+.github
+
+# Lint / format config (not needed in image)
+.prettierrc
+.prettierignore
+eslint.config.mjs
+lint-staged.config.*
+.editorconfig
+
+# Compose and local tooling (image built via Dockerfile only)
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile.*
+Makefile
+
+# OS and logs
+.DS_Store
+Thumbs.db
+logs
+tmp
+temp
+*.log

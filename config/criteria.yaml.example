@@ -1,0 +1,31 @@
+# Copy to criteria.yaml and adjust
+notes: |
+  Family with child. 2-3 rooms, 60-80 m². Turin zones below.
+
+locale: uk
+
+hard:
+  roomsMin: 2
+  roomsMax: 3
+  areaMinSqm: 60
+  areaMaxSqm: 80
+  rentMinEur: 500
+  rentMaxEur: 1000
+  totalCostMaxEur: 1100
+  zones:
+    - name: Cenisia
+      aliases: [cenisia, cit turin, città turin, citta turin]
+    - name: Pozzo Strada
+      aliases: [pozzo strada]
+    - name: San Donato
+      aliases: [san donato, confine san donato]
+    - name: Piazza Bernini
+      aliases: [piazza bernini, bernini]
+  zoneMatchMode: fuzzy
+
+scoring:
+  llmWeight: 0.7
+  rulesWeight: 0.3
+  zoneMissPenalty: 20
+
+# Copy llmRating block from criteria.yaml (10-criteria AI prompt)

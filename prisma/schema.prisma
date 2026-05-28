@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ProcessedEmail {
+  id              String   @id @default(cuid())
+  gmailMessageId  String   @unique
+  subject         String?
+  fromAddress     String?
+  receivedAt      DateTime
+  processedAt     DateTime @default(now())
+  listingsFound   Int      @default(0)
+}
+
+model ProcessedFacebookPost {
+  id            String   @id @default(cuid())
+  postId        String   @unique
+  groupId       String
+  permalink     String?
+  message       String?
+  postedAt      DateTime
+  processedAt   DateTime @default(now())
+  listingsFound Int      @default(0)
+
+  @@index([groupId, postedAt])
+}
+
+model Listing {
+  id                String    @id @default(cuid())
+  canonicalUrl      String    @unique
+  listingUrl        String?   // real open link (e.g. clicks.immobiliare.it from email)
+  alternateUrls     String    @default("[]")
+  source            String?
+  externalId        String?
+  title             String?
+  addressRaw        String?
+  locationHint      String?
+  rentEur           Int?
+  condoFeeEur       Int?
+  totalCostEur      Int?
+  areaSqm           Float?
+  rooms             Float?
+  floor             Int?
+  hasLift           Boolean?
+  rawSnippet        String?
+  listingFingerprint String?
+  firstSeenAt       DateTime  @default(now())
+  lastSeenAt        DateTime  @default(now())
+  priceChangedAt    DateTime?
+  materialHash      String?
+  telegramSentAt    DateTime?
+  telegramMessageId String?
+  dismissedAt       DateTime?
+  savedAt           DateTime?
+  scores            ListingScore[]
+}
+
+model ListingScore {
+  id           String   @id @default(cuid())
+  listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  score        Int
+  reasons      String   @default("[]")
+  llmSummary   String?
+  riskLevel    String   @default("none")
+  riskReasons  String   @default("[]")
+  riskSource   String?
+  model        String?
+  scoredAt     DateTime @default(now())
+
+  @@index([listingId, scoredAt])
+}
+
+model PipelineRun {
+  id                  String   @id @default(cuid())
+  startedAt           DateTime @default(now())
+  finishedAt          DateTime?
+  status              String   @default("running")
+  emailsProcessed     Int      @default(0)
+  listingsParsed      Int      @default(0)
+  listingsNew         Int      @default(0)
+  duplicatesSkipped   Int      @default(0)
+  listingsScored      Int      @default(0)
+  telegramSent        Int      @default(0)
+  errorMessage        String?
+}

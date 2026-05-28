@@ -1,0 +1,68 @@
+notes: Test criteria fixture.
+
+locale: en
+
+hard:
+  roomsMin: 2
+  roomsMax: 3
+  areaMinSqm: 60
+  areaMaxSqm: 80
+  rentMinEur: 500
+  rentMaxEur: 1000
+  totalCostMaxEur: 1100
+  zones:
+    - name: Cenisia
+      aliases: [cenisia, cit turin]
+  zoneMatchMode: fuzzy
+  metroStations:
+    - bernini
+
+soft:
+  mustHave:
+    - suitable for a family
+  niceToHave:
+    - park
+  avoid:
+    - studio
+
+scoring:
+  llmWeight: 0.7
+  rulesWeight: 0.3
+  zoneMissPenalty: 20
+
+telegram:
+  aiSuggestion:
+    prompt: |
+      Write "summary" as one short English sentence for the family.
+
+llmRating:
+  reference:
+    cityCenter: Test center
+    piazzaRivoli: Test Rivoli
+  criteria:
+    - key: price
+      label: Price
+    - key: quality
+      label: Quality
+    - key: value
+      label: Value
+    - key: metroProximity
+      label: Metro
+    - key: centerProximity
+      label: City center
+    - key: greenAreas
+      label: Green areas
+    - key: infrastructure
+      label: Infrastructure
+    - key: quietSafe
+      label: Quiet & safe
+    - key: livingArea
+      label: Living area
+    - key: piazzaRivoliProximity
+      label: Rivoli
+  prompt: |
+    Rate listing {{listingJson}} with keys {{jsonKeys}}.
+    Hard: {{hardCriteria}}
+    {{criteriaKeys}}
+    {{aiSuggestionPrompt}}
+    Return JSON only with scores 0-10, summary, riskLevel, riskReasons.

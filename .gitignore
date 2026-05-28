@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/*
+!secrets/.gitkeep
+
+# Database (local SQLite)
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Test and coverage
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Playwright browser binaries (large; install via `npx playwright install`)
+**/ms-playwright/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / editor / Cursor
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ESLint / tooling caches
+.eslintcache
+
+# Prisma local DB copies
+prisma/*.db
+prisma/*.db-journal
+
+# Temp
+tmp/
+temp/
+.cache/
+
+# Docker local overrides
+docker-compose.override.yml
