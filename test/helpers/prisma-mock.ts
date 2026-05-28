@@ -22,6 +22,10 @@ export function createPrismaMock() {
       create: jest.fn(),
       count: jest.fn(),
     },
+    geocodeCache: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
     pipelineRun: {
       findFirst: jest.fn(),
       create: jest.fn(),

@@ -1,6 +1,10 @@
 import { RunDailyPipelineUseCase } from './run-daily-pipeline.use-case';
 import { createPrismaMock } from '../../../test/helpers/prisma-mock';
-import { mockConfig, mockStepLogger } from '../../../test/helpers/test-utils';
+import {
+  mockConfig,
+  mockCriteriaLoader,
+  mockStepLogger,
+} from '../../../test/helpers/test-utils';
 
 describe('RunDailyPipelineUseCase', () => {
   const prisma = createPrismaMock();
@@ -24,6 +28,7 @@ describe('RunDailyPipelineUseCase', () => {
   const useCase = new RunDailyPipelineUseCase(
     prisma as never,
     mockConfig(),
+    mockCriteriaLoader() as never,
     fetchEmails as never,
     fetchFacebook as never,
     scoreListings as never,
@@ -59,6 +64,8 @@ describe('RunDailyPipelineUseCase', () => {
         areaSqm: 70,
         rooms: 2,
         locationHint: 'Cenisia',
+        listingFingerprint: null,
+        distanceToRefM: null,
         score: 80,
         reasons: [],
         aiSuggestion: null,

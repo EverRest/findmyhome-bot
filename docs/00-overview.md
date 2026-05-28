@@ -1,6 +1,6 @@
 # FindMyHome — overview
 
-Daily pipeline: **Gmail API** (+ optional **Facebook groups**) → parse → **rules + Ollama (on Mac)** → digest to **Telegram group**.
+Daily pipeline: **Gmail API** (+ optional **Facebook groups**) → parse → **rules + geocoding + Ollama (on Mac)** → digest to **Telegram group**.
 
 ## DDD (bounded contexts)
 
@@ -35,4 +35,4 @@ Details: [01-scaffold.md](./01-scaffold.md), [09-docker.md](./09-docker.md).
 
 ## Environment
 
-See `.env.example`. Search criteria: `config/criteria.yaml`.
+See `.env.example`. Search criteria: `config/criteria.yaml`. Proximity / geocoding: [GEO-SCORING.md](./GEO-SCORING.md).

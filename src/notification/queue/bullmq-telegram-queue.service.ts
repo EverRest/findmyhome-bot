@@ -17,6 +17,7 @@ import {
 } from './telegram-send-job';
 import type { TelegramQueuePort } from './telegram-queue.port';
 import { processTelegramSendJob } from './process-telegram-send-job';
+import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import { isBullmqEnabled } from './bullmq.config';
 import { staggerDelaysForJobs } from './telegram-queue-schedule.utils';
 
@@ -33,6 +34,7 @@ export class BullmqTelegramQueueService
     @Inject(TELEGRAM_PORT) private readonly telegram: TelegramPort,
     @Inject(LISTING_REPOSITORY)
     private readonly listings: ListingRepositoryPort,
+    private readonly criteria: CriteriaLoaderService,
     stepLogger: StepLoggerService,
   ) {
     this.log = stepLogger.create(BullmqTelegramQueueService.name);
@@ -154,6 +156,10 @@ export class BullmqTelegramQueueService
   }
 
   private async handleJob(job: Job<TelegramSendJob>): Promise<void> {
-    await processTelegramSendJob(job.data, this.telegram, this.listings);
+    const referencePointName =
+      this.criteria.get().scoring.referencePoint?.name ?? null;
+    await processTelegramSendJob(job.data, this.telegram, this.listings, {
+      referencePointName,
+    });
   }
 }

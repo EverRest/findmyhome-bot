@@ -15,6 +15,7 @@ function base(overrides: Partial<ListingForDigest> = {}): ListingForDigest {
     rooms: 2,
     locationHint: 'Cenisia',
     listingFingerprint: null,
+    distanceToRefM: null,
     score: 80,
     reasons: ['ok'],
     aiSuggestion: null,
@@ -82,6 +83,18 @@ describe('formatListingCard', () => {
       base({ totalCostEur: 900, condoFeeEur: null }),
     );
     expect(noCondo).not.toContain('total');
+  });
+
+  it('shows distance when reference point configured', () => {
+    const text = formatListingCard(base({ distanceToRefM: 650 }), {
+      referencePointName: 'Piazza Bernini',
+    });
+    expect(text).toContain('📍 ~650 m from Piazza Bernini');
+  });
+
+  it('hides distance without reference point name', () => {
+    const text = formatListingCard(base({ distanceToRefM: 650 }));
+    expect(text).not.toContain('📍');
   });
 
   it('falls back when no openable link', () => {

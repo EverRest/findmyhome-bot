@@ -248,6 +248,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
     rooms: number | null;
     locationHint: string | null;
     listingFingerprint: string | null;
+    distanceToRefM: number | null;
     telegramSentAt: Date | null;
     priceChangedAt: Date | null;
     scores: {
@@ -273,6 +274,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
       rooms: r.rooms,
       locationHint: r.locationHint,
       listingFingerprint: r.listingFingerprint,
+      distanceToRefM: r.distanceToRefM,
       score: score.score,
       reasons: JSON.parse(score.reasons) as string[],
       aiSuggestion: score.llmSummary?.trim() || null,

@@ -7,6 +7,7 @@ export async function processTelegramSendJob(
   job: TelegramSendJob,
   telegram: TelegramPort,
   listings: ListingRepositoryPort,
+  options?: { referencePointName?: string | null },
 ): Promise<void> {
   if (job.kind === 'text') {
     await telegram.sendText(job.text);
@@ -22,7 +23,12 @@ export async function processTelegramSendJob(
     return;
   }
 
-  const text = formatListingCard(item);
+  const text = formatListingCard(
+    item,
+    options?.referencePointName
+      ? { referencePointName: options.referencePointName }
+      : undefined,
+  );
   const msgId = await telegram.sendText(text);
   await listings.markTelegramSent(item.id, msgId);
 }

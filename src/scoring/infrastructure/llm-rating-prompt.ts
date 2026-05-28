@@ -1,5 +1,5 @@
 import type { SearchCriteria } from '../../shared/infrastructure/criteria.types';
-import { LLM_RATING_KEYS } from '../domain/llm-rating.types';
+import { LLM_RATING_LLM_KEYS } from '../domain/llm-rating.types';
 import {
   interpolatePrompt,
   listingPayloadForPrompt,
@@ -59,11 +59,13 @@ export function buildLlmRatingPrompt(
 
   const ref = rating.reference;
   const listingJson = JSON.stringify(listingPayloadForPrompt(draft), null, 0);
+  const referenceName = criteria.scoring.referencePoint?.name ?? '';
 
   const vars: Record<string, string> = {
     listingJson,
     hardCriteria: hardCriteriaSummary(criteria),
-    jsonKeys: LLM_RATING_KEYS.join(', '),
+    jsonKeys: LLM_RATING_LLM_KEYS.join(', '),
+    referenceName,
     targetZones:
       ref?.targetZones ??
       criteria.hard.zones?.map((z) => z.name).join(', ') ??

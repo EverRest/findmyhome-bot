@@ -2,6 +2,7 @@ import type { RiskLevel } from '../../shared/domain/risk-level';
 import type { LlmRatingCriterion } from '../../shared/infrastructure/criteria.types';
 import {
   LLM_RATING_KEYS,
+  LLM_RATING_LLM_KEYS,
   type LlmCriteriaScores,
   type LlmRatingKey,
   type LlmRatingResult,
@@ -16,11 +17,33 @@ export function parseCriteriaScores(
   raw: Record<string, unknown>,
 ): LlmCriteriaScores {
   const out = {} as LlmCriteriaScores;
-  for (const key of LLM_RATING_KEYS) {
+  for (const key of LLM_RATING_LLM_KEYS) {
     const v = raw[key];
     out[key] = clampScore(typeof v === 'number' ? v : Number(v));
   }
+  out.proximityToReference = 0;
   return out;
+}
+
+export function injectProximityScore(
+  criteria: LlmCriteriaScores,
+  proximityScore: number,
+): LlmCriteriaScores {
+  return { ...criteria, proximityToReference: clampScore(proximityScore) };
+}
+
+export function applyProximityToLlmResult(
+  llm: LlmRatingResult,
+  proximityScore: number,
+  definitions: LlmRatingCriterion[],
+): LlmRatingResult {
+  const criteria = injectProximityScore(llm.criteria, proximityScore);
+  return {
+    ...llm,
+    criteria,
+    compositeScore: compositeScoreFromCriteria(criteria),
+    displayReasons: formatCriteriaReasons(criteria, definitions),
+  };
 }
 
 export function compositeScoreFromCriteria(
@@ -51,8 +74,8 @@ export function parseLlmRatingResponse(
   definitions: LlmRatingCriterion[],
 ): LlmRatingResult | null {
   const criteria = parseCriteriaScores(parsed);
-  const sum = LLM_RATING_KEYS.reduce((acc, k) => acc + criteria[k], 0);
-  if (sum === 0 && !LLM_RATING_KEYS.some((k) => parsed[k] != null)) {
+  const sum = LLM_RATING_LLM_KEYS.reduce((acc, k) => acc + criteria[k], 0);
+  if (sum === 0 && !LLM_RATING_LLM_KEYS.some((k) => parsed[k] != null)) {
     return null;
   }
 

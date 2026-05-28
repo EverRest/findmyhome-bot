@@ -1,9 +1,7 @@
 import type { RiskLevel } from '../../shared/domain/risk-level';
 
-/**
- * Ten practical criteria scoreable from listing JSON + email snippet (no guessed distances).
- */
-export const LLM_RATING_KEYS = [
+/** Criteria scored by the LLM from listing JSON + snippet. */
+export const LLM_RATING_LLM_KEYS = [
   'budgetFit',
   'sizeForFamily',
   'targetZone',
@@ -12,10 +10,16 @@ export const LLM_RATING_KEYS = [
   'notStudentShared',
   'layoutFit',
   'listingTrust',
-  'metroLandmark',
   'descriptionQuality',
 ] as const;
 
+/** All ten criteria including server-computed proximity. */
+export const LLM_RATING_KEYS = [
+  ...LLM_RATING_LLM_KEYS,
+  'proximityToReference',
+] as const;
+
+export type LlmRatingLlmKey = (typeof LLM_RATING_LLM_KEYS)[number];
 export type LlmRatingKey = (typeof LLM_RATING_KEYS)[number];
 
 export type LlmCriteriaScores = Record<LlmRatingKey, number>;

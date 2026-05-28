@@ -177,7 +177,10 @@ export class SendDigestUseCase {
       for (const item of [...normal, ...suspicious]) {
         this.log.info('telegram', '[DRY RUN] Card', {
           score: item.score,
-          preview: formatListingCard(item).slice(0, 200),
+          preview: formatListingCard(item, this.cardFormatOptions()).slice(
+            0,
+            200,
+          ),
         });
       }
       return toSend.length;
@@ -248,7 +251,7 @@ export class SendDigestUseCase {
     delayMs: number,
   ): Promise<boolean> {
     try {
-      const text = formatListingCard(item);
+      const text = formatListingCard(item, this.cardFormatOptions());
       const msgId = await this.telegram.sendText(text);
       await this.listings.markTelegramSent(item.id, msgId);
       this.log.info('telegram', 'Card sent', {
@@ -289,5 +292,10 @@ export class SendDigestUseCase {
 
   private sleep(ms: number): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
+  }
+
+  private cardFormatOptions() {
+    const name = this.criteria.get().scoring.referencePoint?.name;
+    return name ? { referencePointName: name } : undefined;
   }
 }

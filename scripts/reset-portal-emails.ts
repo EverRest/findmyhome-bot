@@ -27,7 +27,16 @@ async function main(): Promise<void> {
         { canonicalUrl: { contains: 'casa.it' } },
       ],
     },
-    data: { telegramSentAt: null, telegramMessageId: null },
+    data: {
+      telegramSentAt: null,
+      telegramMessageId: null,
+      lat: null,
+      lng: null,
+      geocodeSource: null,
+      geocodedAt: null,
+      distanceToRefM: null,
+      proximityScore: null,
+    },
   });
 
   const deletedScores = await prisma.listingScore.deleteMany({

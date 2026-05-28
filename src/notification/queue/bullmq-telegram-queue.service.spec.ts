@@ -1,6 +1,10 @@
 import { BullmqTelegramQueueService } from './bullmq-telegram-queue.service';
 import { TELEGRAM_SEND_QUEUE_NAME } from './telegram-send-job';
-import { mockConfig, mockStepLogger } from '../../../test/helpers/test-utils';
+import {
+  mockConfig,
+  mockCriteriaLoader,
+  mockStepLogger,
+} from '../../../test/helpers/test-utils';
 import { processTelegramSendJob } from './process-telegram-send-job';
 
 const queueAdd = jest.fn().mockResolvedValue(undefined);
@@ -48,6 +52,7 @@ describe('BullmqTelegramQueueService', () => {
       mockConfig({ BULLMQ_ENABLED: 'false', ...env }),
       telegram as never,
       listings as never,
+      mockCriteriaLoader() as never,
       log as never,
     );
 
@@ -181,6 +186,7 @@ describe('BullmqTelegramQueueService', () => {
       { kind: 'text', text: 'hi' },
       telegram,
       listings,
+      { referencePointName: 'Test Anchor' },
     );
   });
 

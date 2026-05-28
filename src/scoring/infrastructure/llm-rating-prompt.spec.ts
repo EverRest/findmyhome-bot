@@ -38,6 +38,13 @@ describe('buildLlmRatingPrompt', () => {
     expect(prompt).toContain('Do not repeat scores, rent, rooms, or m²');
   });
 
+  it('includes proximity criterion but not in LLM jsonKeys', () => {
+    const prompt = buildLlmRatingPrompt(loadTestCriteria(), draft);
+    expect(prompt).toContain('proximityToReference');
+    expect(prompt).toContain('budgetFit');
+    expect(prompt).not.toMatch(/jsonKeys:[^\n]*proximityToReference/);
+  });
+
   it('accepts preferredMetro as a string in llmRating.reference', () => {
     const criteria: SearchCriteria = {
       ...loadTestCriteria(),

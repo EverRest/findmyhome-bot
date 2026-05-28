@@ -49,6 +49,12 @@ model Listing {
   hasLift           Boolean?
   rawSnippet        String?
   listingFingerprint String?
+  lat               Float?
+  lng               Float?
+  geocodeSource     String?
+  geocodedAt        DateTime?
+  distanceToRefM    Int?
+  proximityScore    Int?
   firstSeenAt       DateTime  @default(now())
   lastSeenAt        DateTime  @default(now())
   priceChangedAt    DateTime?
@@ -60,6 +66,16 @@ model Listing {
   scores            ListingScore[]
 
   @@index([listingFingerprint])
+}
+
+model GeocodeCache {
+  id        String   @id @default(cuid())
+  queryKey  String   @unique
+  queryRaw  String
+  lat       Float
+  lng       Float
+  source    String   @default("nominatim")
+  createdAt DateTime @default(now())
 }
 
 model ListingScore {

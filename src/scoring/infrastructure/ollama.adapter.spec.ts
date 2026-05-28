@@ -5,7 +5,7 @@ import {
   mockStepLogger,
 } from '../../../test/helpers/test-utils';
 
-const tenCriteriaResponse = {
+const nineCriteriaResponse = {
   budgetFit: 8,
   sizeForFamily: 9,
   targetZone: 7,
@@ -14,7 +14,6 @@ const tenCriteriaResponse = {
   notStudentShared: 10,
   layoutFit: 8,
   listingTrust: 7,
-  metroLandmark: 6,
   descriptionQuality: 2,
   summary: 'Nice option',
   riskLevel: 'none',
@@ -48,7 +47,7 @@ describe('OllamaAdapter', () => {
     jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
-        response: JSON.stringify(tenCriteriaResponse),
+        response: JSON.stringify(nineCriteriaResponse),
       }),
     } as Response);
     const r = await adapter.assessListing({
@@ -58,7 +57,7 @@ describe('OllamaAdapter', () => {
       areaSqm: 70,
       locationHint: 'Cenisia',
     });
-    expect(r?.compositeScore).toBe(71);
+    expect(r?.compositeScore).toBe(65);
     expect(r?.criteria.budgetFit).toBe(8);
     expect(r?.displayReasons[0]).toContain('Budget 8/10');
   });

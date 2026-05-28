@@ -1,8 +1,16 @@
 import { ListingForDigest } from '../../listing/domain/listing.repository.port';
 import { resolveListingLink } from '../../listing/domain/resolve-listing-link';
 import { formatSourceLine } from '../../listing/domain/listing-source';
+import { formatDistanceM } from '../../scoring/domain/geo.utils';
 
-export function formatListingCard(item: ListingForDigest): string {
+export interface FormatListingCardOptions {
+  referencePointName?: string | null;
+}
+
+export function formatListingCard(
+  item: ListingForDigest,
+  options?: FormatListingCardOptions,
+): string {
   const lines: string[] = [];
   const risk =
     item.riskLevel === 'high'
@@ -26,6 +34,12 @@ export function formatListingCard(item: ListingForDigest): string {
     priceParts.push(`total ~${item.totalCostEur}€`);
   }
   if (priceParts.length) lines.push(priceParts.join(' · '));
+
+  if (item.distanceToRefM != null && options?.referencePointName?.trim()) {
+    lines.push(
+      `📍 ${formatDistanceM(item.distanceToRefM)} from ${options.referencePointName.trim()}`,
+    );
+  }
 
   if (item.aiSuggestion) {
     lines.push(`💡 ${item.aiSuggestion}`);

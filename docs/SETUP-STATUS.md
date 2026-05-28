@@ -66,12 +66,23 @@ curl http://localhost:3000/pipeline/status | jq '.config.bullmqEnabled, .integra
 Configured in `config/criteria.yaml` → `llmRating` (prompt + 10 criteria × 0–10).
 
 - Each criterion scored 0–10 by Ollama; **composite = sum** (max 100).
+- **`proximityToReference`** is computed server-side (Nominatim + Haversine), not by the LLM — see [GEO-SCORING.md](./GEO-SCORING.md).
 - Final score: `rulesWeight × rules + llmWeight × composite` (default 30% / 70%).
 - Reasons in DB include line like `🤖 AI (72/100): Price 8/10, …`
 - Telegram cards show `💡 …` one-sentence tip from `ListingScore.llmSummary` (prompt in `criteria.yaml` → `telegram.aiSuggestion`)
 - Requires `OLLAMA_SCORING_ENABLED=true` and `ollama serve`.
 
 Edit the prompt or criterion labels in YAML without code changes.
+
+## Proximity / geocoding (Nominatim)
+
+| Item                                        | Required                                       |
+| ------------------------------------------- | ---------------------------------------------- |
+| `scoring.referencePoint` in `criteria.yaml` | For distance scoring                           |
+| `NOMINATIM_USER_AGENT` in `.env`            | Yes — OSM policy                               |
+| `npx prisma migrate deploy`                 | After pull (Listing geo fields + GeocodeCache) |
+
+Details: [GEO-SCORING.md](./GEO-SCORING.md).
 
 ## Facebook groups (optional)
 

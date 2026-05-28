@@ -27,9 +27,9 @@ presentation  →  application  →  domain  ←  infrastructure
 
 ### `scoring`
 
-- **Domain:** `ScoreResult`, `RiskLevel`
-- **Application:** `RuleScorerService`, `ScoreListingsUseCase`
-- **Infrastructure:** `OllamaAdapter` → `OLLAMA_BASE_URL` on **Mac host**
+- **Domain:** `ScoreResult`, `RiskLevel`, `geo.utils` (Haversine, distance buckets)
+- **Application:** `RuleScorerService`, `ScoreListingsUseCase`, `GeocodeListingService`
+- **Infrastructure:** `OllamaAdapter` → `OLLAMA_BASE_URL` on **Mac host**; `NominatimAdapter` → OSM geocoding (see [GEO-SCORING.md](./GEO-SCORING.md))
 
 ### `notification`
 

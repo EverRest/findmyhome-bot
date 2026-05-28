@@ -11,17 +11,30 @@ describe('ScoreListingsUseCase', () => {
   const prisma = createPrismaMock();
   const rules = new RuleScorerService(mockCriteriaLoader() as never);
   const ollama = { assessListing: jest.fn().mockResolvedValue(null) };
+  const geocode = {
+    isProximityEnabled: jest.fn().mockReturnValue(false),
+    resolveProximity: jest.fn(),
+  };
 
   const useCase = new ScoreListingsUseCase(
     prisma as never,
     rules,
     ollama as never,
+    geocode as never,
     mockCriteriaLoader() as never,
     mockConfig({ OLLAMA_SCORING_ENABLED: 'false' }),
     mockStepLogger() as never,
   );
 
   beforeEach(() => jest.clearAllMocks());
+
+  const listingBase = {
+    lat: null,
+    lng: null,
+    distanceToRefM: null,
+    proximityScore: null,
+    condoFeeEur: null,
+  };
 
   it('scores listings and skips cache hits', async () => {
     const now = new Date();
@@ -32,12 +45,12 @@ describe('ScoreListingsUseCase', () => {
         title: 't',
         locationHint: 'cenisia',
         rentEur: 800,
-        condoFeeEur: null,
         areaSqm: 70,
         rooms: 2,
         rawSnippet: 'cenisia',
         lastSeenAt: now,
         scores: [],
+        ...listingBase,
       },
       {
         id: 'l2',
@@ -50,6 +63,7 @@ describe('ScoreListingsUseCase', () => {
         rawSnippet: '',
         lastSeenAt: new Date('2020-01-01'),
         scores: [{ scoredAt: new Date(), score: 80 }],
+        ...listingBase,
       },
     ]);
     prisma.listingScore.create.mockResolvedValue({});
@@ -73,6 +87,7 @@ describe('ScoreListingsUseCase', () => {
         rawSnippet: '',
         lastSeenAt: new Date(now.getTime() - 1000),
         scores: [{ scoredAt: now, score: 70 }],
+        ...listingBase,
       },
     ]);
     expect(await useCase.execute()).toBe(0);
@@ -85,7 +100,7 @@ describe('ScoreListingsUseCase', () => {
       rules,
       {
         assessListing: jest.fn().mockResolvedValue({
-          compositeScore: 80,
+          compositeScore: 65,
           criteria: {
             budgetFit: 8,
             sizeForFamily: 8,
@@ -95,15 +110,16 @@ describe('ScoreListingsUseCase', () => {
             notStudentShared: 8,
             layoutFit: 8,
             listingTrust: 8,
-            metroLandmark: 8,
             descriptionQuality: 8,
+            proximityToReference: 0,
           },
-          displayReasons: ['🤖 AI (80/100): test'],
+          displayReasons: ['🤖 AI (65/100): test'],
           summary: 'Good',
           riskLevel: 'none',
           riskReasons: [],
         }),
       } as never,
+      geocode as never,
       mockCriteriaLoader() as never,
       mockConfig({ OLLAMA_SCORING_ENABLED: 'true' }),
       mockStepLogger() as never,
@@ -120,6 +136,7 @@ describe('ScoreListingsUseCase', () => {
         rawSnippet: '',
         lastSeenAt: new Date(),
         scores: [],
+        ...listingBase,
       },
     ]);
     expect(await llmUseCase.execute()).toBe(1);
@@ -131,7 +148,7 @@ describe('ScoreListingsUseCase', () => {
       rules,
       {
         assessListing: jest.fn().mockResolvedValue({
-          compositeScore: 50,
+          compositeScore: 45,
           criteria: {
             budgetFit: 5,
             sizeForFamily: 5,
@@ -141,15 +158,16 @@ describe('ScoreListingsUseCase', () => {
             notStudentShared: 5,
             layoutFit: 5,
             listingTrust: 5,
-            metroLandmark: 5,
             descriptionQuality: 5,
+            proximityToReference: 0,
           },
-          displayReasons: ['🤖 AI (50/100)'],
+          displayReasons: ['🤖 AI (45/100)'],
           summary: 'Average option',
           riskLevel: 'none',
           riskReasons: [],
         }),
       } as never,
+      geocode as never,
       mockCriteriaLoader() as never,
       mockConfig({ OLLAMA_SCORING_ENABLED: 'true' }),
       mockStepLogger() as never,
@@ -166,6 +184,7 @@ describe('ScoreListingsUseCase', () => {
         rawSnippet: '',
         lastSeenAt: new Date(),
         scores: [],
+        ...listingBase,
       },
     ]);
     await llmUseCase.execute();
@@ -175,5 +194,49 @@ describe('ScoreListingsUseCase', () => {
     expect(createArg.data.llmSummary).toBe('Average option');
     const reasons = JSON.parse(createArg.data.reasons) as string[];
     expect(reasons).not.toContain('Average option');
+  });
+
+  it('applies proximity when geocoding enabled', async () => {
+    const geocodeEnabled = {
+      isProximityEnabled: jest.fn().mockReturnValue(true),
+      resolveProximity: jest.fn().mockResolvedValue({
+        lat: 45.079,
+        lng: 7.642,
+        geocodeSource: 'cache',
+        distanceM: 400,
+        proximityScore: 10,
+      }),
+    };
+    const proximityUseCase = new ScoreListingsUseCase(
+      prisma as never,
+      rules,
+      ollama as never,
+      geocodeEnabled as never,
+      mockCriteriaLoader() as never,
+      mockConfig({ OLLAMA_SCORING_ENABLED: 'false' }),
+      mockStepLogger() as never,
+    );
+    prisma.listing.findMany.mockResolvedValue([
+      {
+        id: 'prox',
+        canonicalUrl: 'https://x/p',
+        title: 'Via Prali flat',
+        locationHint: 'Via Prali 2, Cenisia',
+        rentEur: 600,
+        areaSqm: 65,
+        rooms: 3,
+        rawSnippet: '',
+        lastSeenAt: new Date(),
+        scores: [],
+        ...listingBase,
+      },
+    ]);
+    await proximityUseCase.execute();
+    expect(geocodeEnabled.resolveProximity).toHaveBeenCalled();
+    const createArg = prisma.listingScore.create.mock.calls[0][0] as {
+      data: { reasons: string };
+    };
+    const reasons = JSON.parse(createArg.data.reasons) as string[];
+    expect(reasons.some((r) => r.includes('Test Anchor'))).toBe(true);
   });
 });

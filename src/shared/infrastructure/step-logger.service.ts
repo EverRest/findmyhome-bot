@@ -8,6 +8,8 @@ export type LogStep =
   | 'parse'
   | 'listing'
   | 'score'
+  | 'geocode'
+  | 'nominatim'
   | 'ollama'
   | 'telegram'
   | 'config';

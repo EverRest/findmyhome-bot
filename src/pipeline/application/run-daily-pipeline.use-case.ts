@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../shared/infrastructure/prisma.service';
+import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import { StepLoggerService } from '../../shared/infrastructure/step-logger.service';
 import { FetchAndParseEmailsUseCase } from '../../email-ingestion/application/fetch-and-parse-emails.use-case';
 import { FetchAndParseFacebookPostsUseCase } from '../../facebook-ingestion/application/fetch-and-parse-facebook-posts.use-case';
@@ -37,6 +38,7 @@ export class RunDailyPipelineUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly criteria: CriteriaLoaderService,
     private readonly fetchEmails: FetchAndParseEmailsUseCase,
     private readonly fetchFacebook: FetchAndParseFacebookPostsUseCase,
     private readonly scoreListings: ScoreListingsUseCase,
@@ -103,7 +105,9 @@ export class RunDailyPipelineUseCase {
 
       const topN = Number(this.config.get('TOP_N') ?? 10);
       const top = await this.listings.findTopForDigest(topN);
-      const preview = top.map((t) => formatListingCard(t));
+      const refName = this.criteria.get().scoring.referencePoint?.name;
+      const cardOpts = refName ? { referencePointName: refName } : undefined;
+      const preview = top.map((t) => formatListingCard(t, cardOpts));
 
       await this.prisma.pipelineRun.update({
         where: { id: run.id },

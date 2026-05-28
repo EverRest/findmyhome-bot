@@ -50,6 +50,27 @@ scoring:
   llmWeight: 0.7
   rulesWeight: 0.3
   zoneMissPenalty: 20
+  referencePoint:
+    name: via Medici
+    lat: 45.08004414290359
+    lng: 7.6444000110148
+  geocoding:
+    enabled: true
+    provider: nominatim
+    baseUrl: https://nominatim.openstreetmap.org
+    minIntervalMs: 1100
+    fallbackProvider: photon
+    photonBaseUrl: https://photon.komoot.io
+    citySuffix: 'Torino, Italy'
+  distanceScore:
+    buckets:
+      - { maxM: 500, score: 10 }
+      - { maxM: 1000, score: 9 }
+      - { maxM: 1500, score: 8 }
+      - { maxM: 2500, score: 6 }
+      - { maxM: 4000, score: 3 }
+    missingScore: 5
+  rulesProximityBonus: 15
 
 # One-sentence AI tip shown in Telegram (injected into llmRating prompt as {{aiSuggestionPrompt}})
 telegram:
@@ -90,9 +111,9 @@ llmRating:
     - key: listingTrust
       label: Trust
       description: '10 for major portal listing, normal agent text; 0 for scam patterns (Western Union, wire only, WhatsApp-only contact)'
-    - key: metroLandmark
-      label: Metro
-      description: '10 if snippet names a metro station from {{preferredMetro}} or Rebaudengo/Fermi line; 5 for generic “near metro”; 0 if none'
+    - key: proximityToReference
+      label: Proximity
+      description: 'Server-computed from geocoded address; 10 if within 500m of {{referenceName}}; do not score manually'
     - key: descriptionQuality
       label: Details
       description: '10 if snippet has useful extras (floor, lift, condition, balcony); 0 if one line with almost no detail'
@@ -107,7 +128,7 @@ llmRating:
     Target zones: {{targetZones}}
     Metro / landmarks to look for in text: {{preferredMetro}}
 
-    Criteria (score 0–10 each; use ONLY listing JSON + snippet — do not invent distance or amenities):
+    Criteria (score 0–10 each; use ONLY listing JSON + snippet):
     {{criteriaKeys}}
 
     Listing data (JSON):
@@ -115,7 +136,7 @@ llmRating:
 
     Scoring rules:
     - Use numbers from JSON when present (rentEur, areaSqm, rooms).
-    - Do NOT guess km to metro or city center; only keyword presence in snippet/location.
+    - proximityToReference is computed by the app from geocoding — do NOT include it in your JSON response.
     - If a field is null/missing, score dataComplete and sizeForFamily lower, do not fabricate values.
     - listingTrust: penalize scam phrases; idealista/immobiliare/casa.it style alerts score higher.
 

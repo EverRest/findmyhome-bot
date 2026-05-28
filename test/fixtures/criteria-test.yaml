@@ -29,6 +29,22 @@ scoring:
   llmWeight: 0.7
   rulesWeight: 0.3
   zoneMissPenalty: 20
+  referencePoint:
+    name: Test Anchor
+    lat: 45.08
+    lng: 7.64
+  geocoding:
+    enabled: true
+    provider: nominatim
+    minIntervalMs: 1100
+    fallbackProvider: photon
+    citySuffix: 'Torino, Italy'
+  distanceScore:
+    buckets:
+      - { maxM: 500, score: 10 }
+      - { maxM: 2000, score: 5 }
+    missingScore: 5
+  rulesProximityBonus: 10
 
 telegram:
   digestMaxRentEur: 800
@@ -57,8 +73,8 @@ llmRating:
       label: Layout
     - key: listingTrust
       label: Trust
-    - key: metroLandmark
-      label: Metro
+    - key: proximityToReference
+      label: Proximity
     - key: descriptionQuality
       label: Details
   prompt: |

@@ -60,6 +60,25 @@ export interface SearchCriteria {
     llmWeight: number;
     rulesWeight: number;
     zoneMissPenalty?: number;
+    referencePoint?: {
+      name: string;
+      lat: number;
+      lng: number;
+    };
+    geocoding?: {
+      enabled?: boolean;
+      provider?: 'nominatim';
+      baseUrl?: string;
+      minIntervalMs?: number;
+      fallbackProvider?: 'photon';
+      photonBaseUrl?: string;
+      citySuffix?: string;
+    };
+    distanceScore?: {
+      buckets: { maxM: number; score: number }[];
+      missingScore?: number;
+    };
+    rulesProximityBonus?: number;
   };
   llmRating?: LlmRatingConfig;
 }

@@ -4,12 +4,22 @@ import { RiskLevel } from '../../shared/domain/risk-level';
 import { ListingDraft } from '../../listing/domain/listing-draft';
 import { ScoreResult } from '../domain/score-result';
 import { matchZones } from '../domain/zone-matcher';
+import { formatDistanceM } from '../domain/geo.utils';
+
+export interface RuleScorerInput {
+  draft: ListingDraft;
+  snippet: string;
+  proximityScore?: number | null;
+  distanceM?: number | null;
+  referenceName?: string | null;
+}
 
 @Injectable()
 export class RuleScorerService {
   constructor(private readonly criteriaLoader: CriteriaLoaderService) {}
 
-  score(draft: ListingDraft, snippet: string): ScoreResult {
+  score(input: RuleScorerInput): ScoreResult {
+    const { draft, snippet, proximityScore, distanceM, referenceName } = input;
     const c = this.criteriaLoader.get();
     const h = c.hard;
     const text =
@@ -99,6 +109,19 @@ export class RuleScorerService {
     if (metroHit) {
       score += 8;
       reasons.push('near metro/landmark');
+    }
+
+    if (proximityScore != null && referenceName) {
+      const bonusMax = c.scoring.rulesProximityBonus ?? 15;
+      const bonus = Math.round((proximityScore / 10) * bonusMax);
+      score += bonus;
+      if (distanceM != null) {
+        reasons.push(
+          `📍 ${formatDistanceM(distanceM)} from ${referenceName} (${proximityScore}/10)`,
+        );
+      } else {
+        reasons.push(`📍 proximity ${proximityScore}/10 (${referenceName})`);
+      }
     }
 
     for (const rule of this.riskRules(text, draft)) {
