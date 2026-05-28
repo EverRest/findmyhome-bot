@@ -1,39 +1,20 @@
 notes: |
-  Family with a child. 2-3 rooms. Turin.
-  Target zones: Cenisia, Cit Turin, Pozzo Strada,
-  San Donato (border), near Piazza Bernini.
-  Rent strictly 300–800 EUR/month; area strictly 50–90 m².
+  Family ...
 
 locale: en
 
 hard:
-  roomsMin: 2
-  roomsMax: 5
-  areaMinSqm: 50
-  areaMaxSqm: 90
-  rentMinEur: 300
-  rentMaxEur: 800
+  roomsMin: ...
+  roomsMax: ...
+  areaMinSqm: ...
+  areaMaxSqm: ...
+  rentMinEur: ...
+  rentMaxEur: ...
   totalCostMaxEur: 950
   zones:
-    - name: Cenisia
-      aliases: [cenisia, cit turin, città turin, citta turin]
-    - name: Cit Turin
-      aliases: [cit turin, città turin, citta turin, cit turin]
-    - name: Pozzo Strada
-      aliases: [pozzo strada, pozzostrada]
-    - name: San Donato
-      aliases: [san donato, san donato milanese, confine san donato]
-    - name: Piazza Bernini
-      aliases: [piazza bernini, bernini, via bernini]
   zoneMatchMode: fuzzy
   # Extra landmarks (bonus, not required)
   metroStations:
-    - monte grappa
-    - rivoli
-    - massala
-    - bernini
-    - parco dora
-    - parco pellerina
 
 soft:
   mustHave:
@@ -51,9 +32,9 @@ scoring:
   rulesWeight: 0.3
   zoneMissPenalty: 20
   referencePoint:
-    name: via Medici
-    lat: 45.08004414290359
-    lng: 7.6444000110148
+    name: ...
+    lat: ...
+    lng: ...
   geocoding:
     enabled: true
     provider: nominatim
@@ -61,7 +42,7 @@ scoring:
     minIntervalMs: 1100
     fallbackProvider: photon
     photonBaseUrl: https://photon.komoot.io
-    citySuffix: 'Torino, Italy'
+    citySuffix: ''
   distanceScore:
     buckets:
       - { maxM: 500, score: 10 }
@@ -118,7 +99,7 @@ llmRating:
       label: Details
       description: '10 if snippet has useful extras (floor, lift, condition, balcony); 0 if one line with almost no detail'
   prompt: |
-    You score rental listings in Turin for a family with a child (2–3 rooms, 50–90 m², budget 300–800 €/month).
+    You score rental listings in Turin for ...).
     Summary for Telegram (locale: {{locale}}):
     {{aiSuggestionPrompt}}
 
