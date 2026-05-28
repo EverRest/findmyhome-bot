@@ -47,6 +47,9 @@ export class ScoreListingsUseCase {
     let scored = 0;
     let skippedCache = 0;
     let skippedHardCriteria = 0;
+    let geocodeWithDistance = 0;
+    let geocodeMissing = 0;
+    const proximityEnabled = this.geocode.isProximityEnabled();
     const searchCriteria = this.criteria.get();
 
     for (const listing of listings) {
@@ -86,7 +89,7 @@ export class ScoreListingsUseCase {
         continue;
       }
 
-      const proximity = this.geocode.isProximityEnabled()
+      const proximity = proximityEnabled
         ? await this.geocode.resolveProximity({
             id: listing.id,
             lat: listing.lat,
@@ -101,6 +104,11 @@ export class ScoreListingsUseCase {
             distanceM: listing.distanceToRefM,
             proximityScore: listing.proximityScore,
           };
+
+      if (proximityEnabled) {
+        if (proximity.distanceM != null) geocodeWithDistance++;
+        else geocodeMissing++;
+      }
 
       const ruleResult = this.rules.score({
         draft,
@@ -130,11 +138,7 @@ export class ScoreListingsUseCase {
         ? await this.ollama.assessListing(draft, listing.id)
         : null;
 
-      if (
-        llm &&
-        proximity.proximityScore != null &&
-        this.geocode.isProximityEnabled()
-      ) {
+      if (llm && proximity.proximityScore != null && proximityEnabled) {
         const defs = searchCriteria.llmRating?.criteria ?? [];
         llm = applyProximityToLlmResult(llm, proximity.proximityScore, defs);
       }
@@ -179,6 +183,10 @@ export class ScoreListingsUseCase {
         riskLevel,
         riskSource,
         model: model ?? 'rules-only',
+        ...(proximity.distanceM != null && {
+          distanceM: proximity.distanceM,
+          geocodeSource: proximity.geocodeSource,
+        }),
       });
       scored++;
     }
@@ -188,6 +196,10 @@ export class ScoreListingsUseCase {
       skippedCache,
       skippedHardCriteria,
       examined: listings.length,
+      ...(proximityEnabled && {
+        geocodeWithDistance,
+        geocodeMissing,
+      }),
     });
     return scored;
   }

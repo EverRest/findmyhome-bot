@@ -46,4 +46,11 @@ describe('PhotonAdapter', () => {
     const adapter = new PhotonAdapter(config as never, log as never);
     expect(await adapter.geocode('Via Roma 1', {})).toBeNull();
   });
+
+  it('returns null on network error', async () => {
+    config.get.mockReturnValue(undefined);
+    (global.fetch as jest.Mock).mockRejectedValue(new Error('offline'));
+    const adapter = new PhotonAdapter(config as never, log as never);
+    expect(await adapter.geocode('Via Roma 1', {})).toBeNull();
+  });
 });

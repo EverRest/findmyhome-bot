@@ -37,6 +37,16 @@ describe('geo.utils', () => {
     ).toBe('Cenisia, Torino');
   });
 
+  it('sanitizeGeocodeQuery strips Italian s.n.c.', () => {
+    expect(
+      buildGeocodeQuery(
+        'Via Lauro Rossi s.n.c, Barriera di Milano',
+        undefined,
+        'Torino, Italy',
+      ),
+    ).toBe('Via Lauro Rossi, Barriera di Milano, Torino, Italy');
+  });
+
   it('normalizeGeocodeKey collapses whitespace', () => {
     expect(normalizeGeocodeKey('Via  Prali,  2')).toBe('via prali 2');
   });

@@ -7,7 +7,11 @@ describe('GeocodeListingService', () => {
   const geocoding = { geocode: jest.fn() };
   const criteria = mockCriteriaLoader();
   const log = {
-    create: jest.fn(() => ({ debug: jest.fn(), warn: jest.fn() })),
+    create: jest.fn(() => ({
+      debug: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+    })),
   };
   const service = new GeocodeListingService(
     prisma as never,
@@ -145,6 +149,33 @@ describe('GeocodeListingService', () => {
     expect(geocoding.geocode).toHaveBeenCalled();
     expect(prisma.geocodeCache.create).toHaveBeenCalled();
     expect(r.proximityScore).toBe(9);
+  });
+
+  it('returns missing score when geocoding API misses', async () => {
+    criteria.get.mockReturnValue({
+      scoring: {
+        referencePoint: { name: 'Anchor', lat: 45.08, lng: 7.64 },
+        geocoding: { enabled: true, citySuffix: 'Torino, Italy' },
+        distanceScore: {
+          buckets: [{ maxM: 500, score: 10 }],
+          missingScore: 5,
+        },
+      },
+    });
+    prisma.geocodeCache.findUnique.mockResolvedValue(null);
+    geocoding.geocode.mockResolvedValue(null);
+
+    const r = await service.resolveProximity({
+      id: '5',
+      lat: null,
+      lng: null,
+      locationHint: 'Unknown street 99',
+      title: 'Flat',
+    });
+
+    expect(r.proximityScore).toBe(5);
+    expect(r.distanceM).toBeNull();
+    expect(prisma.listing.update).not.toHaveBeenCalled();
   });
 
   it('isProximityEnabled reflects reference point config', () => {

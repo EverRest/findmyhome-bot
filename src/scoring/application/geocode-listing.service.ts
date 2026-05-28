@@ -135,7 +135,10 @@ export class GeocodeListingService {
       fallbackProvider: scoring.geocoding?.fallbackProvider,
       photonBaseUrl: scoring.geocoding?.photonBaseUrl,
     });
-    if (!result) return null;
+    if (!result) {
+      this.log.info('geocode', 'Address not resolved', { query });
+      return null;
+    }
 
     await this.prisma.geocodeCache.create({
       data: {

@@ -82,4 +82,27 @@ describe('GeocodingAdapter', () => {
     ).toBeNull();
     expect(photon.geocode).not.toHaveBeenCalled();
   });
+
+  it('waits between requests when throttle interval not elapsed', async () => {
+    jest.useFakeTimers();
+    nominatim.geocode.mockResolvedValue({ lat: 45.079, lng: 7.642 });
+    const adapter = new GeocodingAdapter(
+      nominatim as never,
+      photon as never,
+      log as never,
+    );
+
+    const first = adapter.geocode('Via Roma 1', { minIntervalMs: 1000 });
+    jest.advanceTimersByTime(200);
+    const second = adapter.geocode('Via Roma 2', { minIntervalMs: 1000 });
+
+    await first;
+    expect(nominatim.geocode).toHaveBeenCalledTimes(1);
+
+    jest.advanceTimersByTime(800);
+    await second;
+    expect(nominatim.geocode).toHaveBeenCalledTimes(2);
+
+    jest.useRealTimers();
+  });
 });

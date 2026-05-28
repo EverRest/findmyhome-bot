@@ -58,13 +58,24 @@ export function buildGeocodeQuery(
   if (!raw || raw.length < 5) return null;
 
   const suffix = citySuffix?.trim();
-  if (!suffix) return raw;
-
-  const lower = raw.toLowerCase();
-  if (lower.includes('torino') || lower.includes('turin')) {
-    return raw;
+  let query = raw;
+  if (suffix) {
+    const lower = raw.toLowerCase();
+    if (!lower.includes('torino') && !lower.includes('turin')) {
+      query = `${raw}, ${suffix}`;
+    }
   }
-  return `${raw}, ${suffix}`;
+  return sanitizeGeocodeQuery(query);
+}
+
+/** Normalizes Italian address quirks before hitting geocoding APIs. */
+export function sanitizeGeocodeQuery(query: string): string {
+  return query
+    .replace(/\bs\.?\s*n\.?\s*c\.?\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+,/g, ',')
+    .replace(/,\s*,/g, ',')
+    .trim();
 }
 
 export function formatDistanceM(meters: number): string {
