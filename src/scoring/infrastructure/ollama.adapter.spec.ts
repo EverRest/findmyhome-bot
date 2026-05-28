@@ -6,16 +6,16 @@ import {
 } from '../../../test/helpers/test-utils';
 
 const tenCriteriaResponse = {
-  price: 8,
-  quality: 7,
-  value: 8,
-  metroProximity: 6,
-  centerProximity: 5,
-  greenAreas: 7,
-  infrastructure: 8,
-  quietSafe: 7,
-  livingArea: 9,
-  piazzaRivoliProximity: 6,
+  budgetFit: 8,
+  sizeForFamily: 9,
+  targetZone: 7,
+  dataComplete: 8,
+  costClarity: 6,
+  notStudentShared: 10,
+  layoutFit: 8,
+  listingTrust: 7,
+  metroLandmark: 6,
+  descriptionQuality: 2,
   summary: 'Nice option',
   riskLevel: 'none',
   riskReasons: [],
@@ -59,8 +59,8 @@ describe('OllamaAdapter', () => {
       locationHint: 'Cenisia',
     });
     expect(r?.compositeScore).toBe(71);
-    expect(r?.criteria.price).toBe(8);
-    expect(r?.displayReasons[0]).toContain('Price 8/10');
+    expect(r?.criteria.budgetFit).toBe(8);
+    expect(r?.displayReasons[0]).toContain('Budget 8/10');
   });
 
   it('returns null on network error', async () => {

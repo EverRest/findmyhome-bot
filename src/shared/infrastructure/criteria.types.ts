@@ -30,6 +30,8 @@ export interface TelegramAiSuggestionConfig {
 
 export interface TelegramConfig {
   aiSuggestion?: TelegramAiSuggestionConfig;
+  /** Do not ingest or send listings with rent above this (default 800). */
+  digestMaxRentEur?: number;
 }
 
 export interface SearchCriteria {

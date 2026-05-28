@@ -1,5 +1,9 @@
 import { FetchAndParseEmailsUseCase } from './fetch-and-parse-emails.use-case';
-import { mockConfig, mockStepLogger } from '../../../test/helpers/test-utils';
+import {
+  mockConfig,
+  mockCriteriaLoader,
+  mockStepLogger,
+} from '../../../test/helpers/test-utils';
 
 describe('FetchAndParseEmailsUseCase', () => {
   const gmail = {
@@ -19,6 +23,7 @@ describe('FetchAndParseEmailsUseCase', () => {
     parsers,
     listings as never,
     mockConfig(),
+    mockCriteriaLoader() as never,
     log as never,
   );
 
@@ -47,8 +52,12 @@ describe('FetchAndParseEmailsUseCase', () => {
     parsers.parse.mockReturnValue([
       {
         canonicalUrl: 'https://www.idealista.it/immobile/1/',
+        title: 'Bilocale Cenisia',
+        locationHint: 'Cenisia, Torino',
+        rooms: 2,
+        areaSqm: 70,
         rentEur: 750,
-        rawSnippet: '750 €/mese',
+        rawSnippet: '750 €/mese Cenisia',
       },
     ]);
     listings.upsertFromDraft.mockResolvedValue({
@@ -79,8 +88,12 @@ describe('FetchAndParseEmailsUseCase', () => {
     parsers.parse.mockReturnValue([
       {
         canonicalUrl: 'https://www.idealista.it/immobile/2/',
+        title: 'Bilocale Cenisia',
+        locationHint: 'Cenisia, Torino',
+        rooms: 2,
+        areaSqm: 70,
         rentEur: 750,
-        rawSnippet: '750 €/mese',
+        rawSnippet: '750 €/mese Cenisia',
       },
     ]);
     listings.upsertFromDraft.mockResolvedValue({

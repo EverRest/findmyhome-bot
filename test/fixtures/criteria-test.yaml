@@ -31,38 +31,40 @@ scoring:
   zoneMissPenalty: 20
 
 telegram:
+  digestMaxRentEur: 800
   aiSuggestion:
     prompt: |
       Write "summary" as one short English sentence for the family.
 
 llmRating:
   reference:
-    cityCenter: Test center
-    piazzaRivoli: Test Rivoli
+    targetZones: Cenisia, Cit Turin
+    preferredMetro: bernini, rivoli
   criteria:
-    - key: price
-      label: Price
-    - key: quality
-      label: Quality
-    - key: value
-      label: Value
-    - key: metroProximity
+    - key: budgetFit
+      label: Budget
+    - key: sizeForFamily
+      label: Size
+    - key: targetZone
+      label: Zone
+    - key: dataComplete
+      label: Data
+    - key: costClarity
+      label: Costs
+    - key: notStudentShared
+      label: Not student
+    - key: layoutFit
+      label: Layout
+    - key: listingTrust
+      label: Trust
+    - key: metroLandmark
       label: Metro
-    - key: centerProximity
-      label: City center
-    - key: greenAreas
-      label: Green areas
-    - key: infrastructure
-      label: Infrastructure
-    - key: quietSafe
-      label: Quiet & safe
-    - key: livingArea
-      label: Living area
-    - key: piazzaRivoliProximity
-      label: Rivoli
+    - key: descriptionQuality
+      label: Details
   prompt: |
     Rate listing {{listingJson}} with keys {{jsonKeys}}.
     Hard: {{hardCriteria}}
+    Zones: {{targetZones}}
     {{criteriaKeys}}
     {{aiSuggestionPrompt}}
     Return JSON only with scores 0-10, summary, riskLevel, riskReasons.

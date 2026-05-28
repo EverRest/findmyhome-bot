@@ -64,8 +64,6 @@ export function buildLlmRatingPrompt(
     listingJson,
     hardCriteria: hardCriteriaSummary(criteria),
     jsonKeys: LLM_RATING_KEYS.join(', '),
-    cityCenter: ref?.cityCenter ?? 'Piazza Castello / centro storico, Torino',
-    piazzaRivoli: ref?.piazzaRivoli ?? 'Piazza Rivoli, Torino',
     targetZones:
       ref?.targetZones ??
       criteria.hard.zones?.map((z) => z.name).join(', ') ??

@@ -7,6 +7,11 @@ import { GMAIL_PORT } from '../domain/gmail.port';
 import type { GmailPort } from '../domain/gmail.port';
 import { LISTING_PARSER_REGISTRY } from '../domain/listing-parser.port';
 import type { ListingParserRegistryPort } from '../domain/listing-parser.port';
+import {
+  getHardCriteriaFailures,
+  meetsHardCriteria,
+} from '../../listing/domain/listing-hard-criteria';
+import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import { shouldPersistListingDraft } from '../infrastructure/parsers/rental-listing.utils';
 
 export interface FetchAndParseResult {
@@ -28,6 +33,7 @@ export class FetchAndParseEmailsUseCase {
     @Inject(LISTING_REPOSITORY)
     private readonly listings: ListingRepositoryPort,
     private readonly config: ConfigService,
+    private readonly criteria: CriteriaLoaderService,
     stepLogger: StepLoggerService,
   ) {
     this.log = stepLogger.create(FetchAndParseEmailsUseCase.name);
@@ -60,6 +66,8 @@ export class FetchAndParseEmailsUseCase {
     let listingsNew = 0;
     let duplicatesSkipped = 0;
     let listingsSkippedNonRent = 0;
+    let listingsSkippedHardLimits = 0;
+    const searchCriteria = this.criteria.get();
     let emailsProcessed = 0;
     let emailsSkippedAlreadyProcessed = 0;
 
@@ -81,10 +89,20 @@ export class FetchAndParseEmailsUseCase {
       });
 
       const allDrafts = this.parsers.parse(email);
-      const drafts = allDrafts.filter((d) =>
-        shouldPersistListingDraft(d, email),
-      );
-      const skippedNonRent = allDrafts.length - drafts.length;
+      const drafts = allDrafts.filter((d) => {
+        if (!shouldPersistListingDraft(d, email)) return false;
+        if (!meetsHardCriteria(d, searchCriteria)) {
+          listingsSkippedHardLimits++;
+          this.log.debug('listing', 'Skip — hard criteria', {
+            url: d.canonicalUrl,
+            failures: getHardCriteriaFailures(d, searchCriteria),
+          });
+          return false;
+        }
+        return true;
+      });
+      const skippedNonRent =
+        allDrafts.length - drafts.length - listingsSkippedHardLimits;
       listingsSkippedNonRent += skippedNonRent;
       listingsParsed += drafts.length;
 

@@ -2,7 +2,7 @@ notes: |
   Family with a child. 2-3 rooms. Turin.
   Target zones: Cenisia, Cit Turin, Pozzo Strada,
   San Donato (border), near Piazza Bernini.
-  Rent strictly 300–900 EUR/month; area strictly 50–90 m².
+  Rent strictly 300–800 EUR/month; area strictly 50–90 m².
 
 locale: en
 
@@ -12,7 +12,7 @@ hard:
   areaMinSqm: 50
   areaMaxSqm: 90
   rentMinEur: 300
-  rentMaxEur: 900
+  rentMaxEur: 800
   totalCostMaxEur: 950
   zones:
     - name: Cenisia
@@ -53,79 +53,76 @@ scoring:
 
 # One-sentence AI tip shown in Telegram (injected into llmRating prompt as {{aiSuggestionPrompt}})
 telegram:
+  digestMaxRentEur: 800
   aiSuggestion:
     prompt: |
       The JSON "summary" field must be exactly ONE sentence in English (max 30 words).
       Give a practical tip for this family: why it may fit, main trade-off, or what to verify on viewing.
       Do not repeat numeric scores, rent, rooms, or m² from the listing data.
 
-# AI rating: 10 criteria × 0–10 → sum 0–100 (see Ollama prompt)
+# AI rating: 10 practical criteria × 0–10 → sum 0–100 (objective, from JSON + snippet only)
 llmRating:
   reference:
-    cityCenter: 'Piazza Castello / centro storico, Torino'
-    piazzaRivoli: 'Piazza Rivoli, Torino (Cenisia / Cit Turin area)'
     targetZones: 'Cenisia, Cit Turin, Pozzo Strada, San Donato, Piazza Bernini'
-    preferredMetro: 'Bernini, Rivoli, Monte Grappa, Massaua, Pozzo Strada, Marcadè'
+    preferredMetro: 'Bernini, Rivoli, Monte Grappa, Massaua, Pozzo Strada, Marcadè, Rebaudengo, Fermi'
   criteria:
-    - key: price
-      label: Price
-      description: 'How well rent (+ condo fee if any) fits the family budget; lower rent in range = higher score'
-    - key: quality
-      label: Quality
-      description: 'Condition, description, photos/details in email, listing credibility'
-    - key: value
-      label: Value
-      description: 'Price / area / location / condition balance'
-    - key: metroProximity
+    - key: budgetFit
+      label: Budget
+      description: '10 if rentEur is 300–900 and totalCostEur (if known) ≤ 950; 0 if rent missing or far outside range; mid if at edges'
+    - key: sizeForFamily
+      label: Size
+      description: '10 if rooms 2–4 and areaSqm 50–90 in JSON; lower if rooms/area missing or clearly wrong for family with child'
+    - key: targetZone
+      label: Zone
+      description: '10 if location/snippet explicitly names a target zone ({{targetZones}}); 5 if only generic Torino; 0 if wrong area'
+    - key: dataComplete
+      label: Data
+      description: '10 if rentEur, rooms, areaSqm, and location are all present; subtract for each missing field'
+    - key: costClarity
+      label: Costs
+      description: '10 if condo/spese/heating costs stated or clearly included; lower if hidden costs likely or not mentioned'
+    - key: notStudentShared
+      label: Not student
+      description: '10 if no student-only, posto letto, stanza singola, Erasmus, solo studenti in snippet; 0 if student housing'
+    - key: layoutFit
+      label: Layout
+      description: '10 for bilocale/trilocale family layout; low for monolocale, studio, single room only'
+    - key: listingTrust
+      label: Trust
+      description: '10 for major portal listing, normal agent text; 0 for scam patterns (Western Union, wire only, WhatsApp-only contact)'
+    - key: metroLandmark
       label: Metro
-      description: 'Proximity to Turin metro (M1) stations; closer = higher score'
-    - key: centerProximity
-      label: City center
-      description: 'Proximity to {{cityCenter}}; closer = higher score'
-    - key: greenAreas
-      label: Green areas
-      description: 'Parks, Dora river, Parco Dora, Pellerina, Vallette, nearby green space'
-    - key: infrastructure
-      label: Infrastructure
-      description: 'Supermarkets, malls, schools, daycare, pharmacies, transport'
-    - key: quietSafe
-      label: Quiet & safe
-      description: 'Quiet area, no obvious red flags in text; family-friendly'
-    - key: livingArea
-      label: Living area
-      description: 'm² for a family with a child; 50–90 m² ideal; too small/large = lower'
-    - key: piazzaRivoliProximity
-      label: Piazza Rivoli
-      description: 'Proximity to {{piazzaRivoli}}; closer = higher score'
+      description: '10 if snippet names a metro station from {{preferredMetro}} or Rebaudengo/Fermi line; 5 for generic “near metro”; 0 if none'
+    - key: descriptionQuality
+      label: Details
+      description: '10 if snippet has useful extras (floor, lift, condition, balcony); 0 if one line with almost no detail'
   prompt: |
-    You score rental apartments in Turin, Italy for a family with a child.
+    You score rental listings in Turin for a family with a child (2–3 rooms, 50–90 m², budget 300–800 €/month).
     Summary for Telegram (locale: {{locale}}):
     {{aiSuggestionPrompt}}
 
-    Hard limits (already checked in code — do not contradict without strong reason):
+    Hard limits (already enforced before save — scores should align):
     {{hardCriteria}}
 
-    Geography reference:
-    - City center: {{cityCenter}}
-    - Target zones: {{targetZones}}
-    - Metro (approx.): {{preferredMetro}}
-    - Piazza Rivoli: {{piazzaRivoli}}
+    Target zones: {{targetZones}}
+    Metro / landmarks to look for in text: {{preferredMetro}}
 
-    Criteria (JSON key → description):
+    Criteria (score 0–10 each; use ONLY listing JSON + snippet — do not invent distance or amenities):
     {{criteriaKeys}}
 
     Listing data (JSON):
     {{listingJson}}
 
-    Task: score EACH criterion as an integer from 0 to 10 (10 = ideal for this family).
-    For distance criteria (metro, center, Piazza Rivoli): CLOSER = HIGHER score.
-    If data is sparse — infer from address/district and typical Turin geography; do not invent exact meters.
+    Scoring rules:
+    - Use numbers from JSON when present (rentEur, areaSqm, rooms).
+    - Do NOT guess km to metro or city center; only keyword presence in snippet/location.
+    - If a field is null/missing, score dataComplete and sizeForFamily lower, do not fabricate values.
+    - listingTrust: penalize scam phrases; idealista/immobiliare/casa.it style alerts score higher.
 
-    Return ONLY valid JSON (no markdown), English keys:
+    Return ONLY valid JSON (no markdown):
     {{jsonKeys}},
-    "summary": "one sentence per aiSuggestion rules above",
+    "summary": "one sentence per aiSuggestion rules",
     "riskLevel": "none" | "low" | "medium" | "high",
     "riskReasons": []
 
-    Use riskLevel "high" only for obvious scams, western union, WhatsApp-only contact, suspiciously low price.
-    If no risk — riskLevel "none" and riskReasons [].
+    riskLevel "high" only for scams / messenger-only / wire transfer; otherwise "none" and riskReasons [].

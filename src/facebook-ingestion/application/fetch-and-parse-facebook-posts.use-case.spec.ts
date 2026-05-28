@@ -2,7 +2,11 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { FetchAndParseFacebookPostsUseCase } from './fetch-and-parse-facebook-posts.use-case';
 import { FacebookRentalPostParser } from '../infrastructure/facebook-rental-post.parser';
-import { mockConfig, mockStepLogger } from '../../../test/helpers/test-utils';
+import {
+  mockConfig,
+  mockCriteriaLoader,
+  mockStepLogger,
+} from '../../../test/helpers/test-utils';
 
 const studentText = readFileSync(
   resolve(__dirname, '../../../test/fixtures/facebook-post-student.txt'),
@@ -28,6 +32,7 @@ describe('FetchAndParseFacebookPostsUseCase', () => {
       FACEBOOK_INGESTION_ENABLED: 'true',
       FACEBOOK_GROUP_IDS: '123',
     }),
+    mockCriteriaLoader() as never,
     mockStepLogger() as never,
   );
 

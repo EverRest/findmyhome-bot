@@ -1,17 +1,19 @@
 import type { RiskLevel } from '../../shared/domain/risk-level';
 
-/** JSON keys returned by the model (stable English identifiers). */
+/**
+ * Ten practical criteria scoreable from listing JSON + email snippet (no guessed distances).
+ */
 export const LLM_RATING_KEYS = [
-  'price',
-  'quality',
-  'value',
-  'metroProximity',
-  'centerProximity',
-  'greenAreas',
-  'infrastructure',
-  'quietSafe',
-  'livingArea',
-  'piazzaRivoliProximity',
+  'budgetFit',
+  'sizeForFamily',
+  'targetZone',
+  'dataComplete',
+  'costClarity',
+  'notStudentShared',
+  'layoutFit',
+  'listingTrust',
+  'metroLandmark',
+  'descriptionQuality',
 ] as const;
 
 export type LlmRatingKey = (typeof LLM_RATING_KEYS)[number];

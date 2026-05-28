@@ -14,8 +14,9 @@ describe('buildLlmRatingPrompt', () => {
   it('includes listing, criteria keys, and hard area bounds', () => {
     const prompt = buildLlmRatingPrompt(loadTestCriteria(), draft);
     expect(prompt).toContain('Trilocale Cenisia');
-    expect(prompt).toContain('price');
-    expect(prompt).toContain('piazzaRivoliProximity');
+    expect(prompt).toContain('budgetFit');
+    expect(prompt).toContain('notStudentShared');
+    expect(prompt).toContain('listingTrust');
     expect(prompt).toContain('summary');
     expect(prompt).toContain('area 60-80 m²');
   });

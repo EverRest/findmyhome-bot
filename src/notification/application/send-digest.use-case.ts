@@ -8,6 +8,8 @@ import type {
 } from '../../listing/domain/listing.repository.port';
 import { TELEGRAM_PORT } from '../domain/telegram.port';
 import type { TelegramPort } from '../domain/telegram.port';
+import { meetsHardCriteria } from '../../listing/domain/listing-hard-criteria';
+import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import { formatListingCard } from './format-listing-card';
 import { isTelegramRateLimitError } from '../infrastructure/telegram-api.utils';
 import { TELEGRAM_QUEUE_PORT } from '../queue/telegram-queue.port';
@@ -25,6 +27,7 @@ export class SendDigestUseCase {
     @Inject(TELEGRAM_QUEUE_PORT)
     private readonly telegramQueue: TelegramQueuePort,
     private readonly config: ConfigService,
+    private readonly criteria: CriteriaLoaderService,
     stepLogger: StepLoggerService,
   ) {
     this.log = stepLogger.create(SendDigestUseCase.name);
@@ -54,8 +57,19 @@ export class SendDigestUseCase {
 
     const minScore = Number(this.config.get('MIN_DIGEST_SCORE') ?? 25);
     const minRent = Number(this.config.get('MIN_DIGEST_RENT_EUR') ?? 200);
+    const searchCriteria = this.criteria.get();
 
     for (const item of candidates) {
+      if (!meetsHardCriteria(item, searchCriteria)) {
+        skippedAlreadySent++;
+        this.log.debug('telegram', 'Skip — hard criteria', {
+          id: item.id,
+          rooms: item.rooms,
+          areaSqm: item.areaSqm,
+          rentEur: item.rentEur,
+        });
+        continue;
+      }
       if (item.score < minScore) {
         skippedAlreadySent++;
         continue;

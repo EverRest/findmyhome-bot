@@ -6,6 +6,8 @@ import type { ListingRepositoryPort } from '../../listing/domain/listing.reposit
 import { FACEBOOK_GROUPS_PORT } from '../domain/facebook-groups.port';
 import type { FacebookGroupsPort } from '../domain/facebook-groups.port';
 import { FacebookRentalPostParser } from '../infrastructure/facebook-rental-post.parser';
+import { meetsHardCriteria } from '../../listing/domain/listing-hard-criteria';
+import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import {
   isStudentHousingPost,
   shouldPersistFacebookListing,
@@ -32,6 +34,7 @@ export class FetchAndParseFacebookPostsUseCase {
     private readonly listings: ListingRepositoryPort,
     private readonly parser: FacebookRentalPostParser,
     private readonly config: ConfigService,
+    private readonly criteria: CriteriaLoaderService,
     stepLogger: StepLoggerService,
   ) {
     this.log = stepLogger.create(FetchAndParseFacebookPostsUseCase.name);
@@ -63,6 +66,7 @@ export class FetchAndParseFacebookPostsUseCase {
     let skippedStudent = 0;
     let skippedNonRent = 0;
     let postsSkippedAlreadyProcessed = 0;
+    const searchCriteria = this.criteria.get();
 
     for (const post of posts) {
       if (await this.listings.existsProcessedFacebookPost(post.postId)) {
@@ -86,8 +90,10 @@ export class FetchAndParseFacebookPostsUseCase {
       }
 
       const allDrafts = this.parser.parse(post);
-      const drafts = allDrafts.filter((d) =>
-        shouldPersistFacebookListing(d, post.message),
+      const drafts = allDrafts.filter(
+        (d) =>
+          shouldPersistFacebookListing(d, post.message) &&
+          meetsHardCriteria(d, searchCriteria),
       );
       const skippedFromPost = allDrafts.length - drafts.length;
       if (skippedFromPost > 0) {

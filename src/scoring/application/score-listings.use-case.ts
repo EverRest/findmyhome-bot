@@ -4,6 +4,7 @@ import { PrismaService } from '../../shared/infrastructure/prisma.service';
 import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import { StepLoggerService } from '../../shared/infrastructure/step-logger.service';
 import { OllamaAdapter } from '../infrastructure/ollama.adapter';
+import { meetsHardCriteria } from '../../listing/domain/listing-hard-criteria';
 import { RuleScorerService } from './rule-scorer.service';
 
 @Injectable()
@@ -41,6 +42,8 @@ export class ScoreListingsUseCase {
 
     let scored = 0;
     let skippedCache = 0;
+    let skippedHardCriteria = 0;
+    const searchCriteria = this.criteria.get();
 
     for (const listing of listings) {
       const latest = listing.scores[0];
@@ -69,6 +72,15 @@ export class ScoreListingsUseCase {
         rooms: listing.rooms ?? undefined,
         rawSnippet: listing.rawSnippet ?? undefined,
       };
+
+      if (!meetsHardCriteria(draft, searchCriteria)) {
+        skippedHardCriteria++;
+        this.log.debug('score', 'Skip — hard criteria (no AI)', {
+          listingId: listing.id,
+          url: listing.canonicalUrl,
+        });
+        continue;
+      }
 
       const ruleResult = this.rules.score(draft, listing.rawSnippet ?? '');
       let score = Math.round(ruleResult.score * weights.rulesWeight);
@@ -138,6 +150,7 @@ export class ScoreListingsUseCase {
     this.log.step('score', 'Scoring finished', {
       scored,
       skippedCache,
+      skippedHardCriteria,
       examined: listings.length,
     });
     return scored;

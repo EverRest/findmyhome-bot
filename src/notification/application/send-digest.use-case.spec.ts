@@ -1,6 +1,12 @@
 import { SendDigestUseCase } from './send-digest.use-case';
 import type { TelegramSendJob } from '../queue/telegram-send-job';
-import { mockConfig, mockStepLogger } from '../../../test/helpers/test-utils';
+import {
+  mockConfig,
+  mockCriteriaLoader,
+  mockStepLogger,
+} from '../../../test/helpers/test-utils';
+
+const criteriaLoader = mockCriteriaLoader();
 
 describe('SendDigestUseCase', () => {
   const listings = {
@@ -24,10 +30,53 @@ describe('SendDigestUseCase', () => {
     telegram,
     telegramQueue,
     mockConfig({ PIPELINE_DRY_RUN: 'true' }),
+    criteriaLoader as never,
     log as never,
   );
 
   beforeEach(() => jest.clearAllMocks());
+
+  it('skips listings outside hard digest limits (1 room, tiny area, rent > 800)', async () => {
+    telegram.isConfigured.mockReturnValue(true);
+    listings.findTopForDigest.mockResolvedValue([
+      {
+        id: 'tiny',
+        canonicalUrl: 'https://www.idealista.it/immobile/35831720/',
+        listingUrl: 'https://www.idealista.it/immobile/35831720/',
+        source: 'idealista',
+        title: 'Monolocale',
+        rentEur: 500,
+        areaSqm: 27,
+        rooms: 1,
+        locationHint: 'Torino',
+        score: 51,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+      {
+        id: 'ok',
+        canonicalUrl: 'https://www.idealista.it/immobile/1/',
+        listingUrl: 'https://www.idealista.it/immobile/1/',
+        source: 'idealista',
+        title: 'Bilocale',
+        rentEur: 750,
+        areaSqm: 70,
+        rooms: 2,
+        locationHint: 'Cenisia',
+        score: 60,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+    ]);
+    listings.shouldSendToTelegram.mockResolvedValue(true);
+
+    const sent = await useCase.execute({ listingsNew: 1, duplicatesSkipped: 0 });
+    expect(sent).toBe(1);
+  });
 
   it('returns 0 when telegram not configured', async () => {
     telegram.isConfigured.mockReturnValue(false);
@@ -180,6 +229,7 @@ describe('SendDigestUseCase', () => {
       telegram,
       telegramQueue,
       mockConfig({ PIPELINE_DRY_RUN: 'false', TOP_N: '10' }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -223,6 +273,7 @@ describe('SendDigestUseCase', () => {
       telegram,
       telegramQueue,
       mockConfig({ PIPELINE_DRY_RUN: 'false' }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -266,6 +317,7 @@ describe('SendDigestUseCase', () => {
       telegram,
       telegramQueue,
       mockConfig({ PIPELINE_DRY_RUN: 'false' }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -333,6 +385,7 @@ describe('SendDigestUseCase', () => {
         TELEGRAM_MAX_SEND_PER_RUN: '1',
         TELEGRAM_SEND_DELAY_MS: '10',
       }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -393,6 +446,7 @@ describe('SendDigestUseCase', () => {
       telegram,
       telegramQueue,
       mockConfig({ PIPELINE_DRY_RUN: 'false' }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -431,6 +485,7 @@ describe('SendDigestUseCase', () => {
       telegram,
       telegramQueue,
       mockConfig({ PIPELINE_DRY_RUN: 'false' }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -470,6 +525,7 @@ describe('SendDigestUseCase', () => {
       telegram,
       telegramQueue,
       mockConfig({ PIPELINE_DRY_RUN: 'false', TELEGRAM_SEND_DELAY_MS: '10' }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -536,6 +592,7 @@ describe('SendDigestUseCase', () => {
         PIPELINE_DRY_RUN: 'false',
         TELEGRAM_SEND_DELAY_MS: '0',
       }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -597,6 +654,7 @@ describe('SendDigestUseCase', () => {
       telegram,
       telegramQueue,
       mockConfig({ PIPELINE_DRY_RUN: 'false' }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -642,6 +700,7 @@ describe('SendDigestUseCase', () => {
         TELEGRAM_MAX_SEND_PER_RUN: '10',
         TELEGRAM_SEND_DELAY_MS: '10',
       }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -692,6 +751,7 @@ describe('SendDigestUseCase', () => {
         PIPELINE_DRY_RUN: 'false',
         BULLMQ_ENABLED: 'true',
       }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
@@ -738,6 +798,7 @@ describe('SendDigestUseCase', () => {
         PIPELINE_DRY_RUN: 'false',
         BULLMQ_ENABLED: 'true',
       }),
+      criteriaLoader as never,
       log as never,
     );
     telegram.isConfigured.mockReturnValue(true);
