@@ -9,8 +9,10 @@ import type {
 import { TELEGRAM_PORT } from '../domain/telegram.port';
 import type { TelegramPort } from '../domain/telegram.port';
 import { meetsHardCriteria } from '../../listing/domain/listing-hard-criteria';
+import { computeListingFingerprint } from '../../listing/domain/listing-fingerprint';
 import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import { formatListingCard } from './format-listing-card';
+import { isMeaningfulListingTitle } from '../../email-ingestion/infrastructure/parsers/casa-alert.utils';
 import { isTelegramRateLimitError } from '../infrastructure/telegram-api.utils';
 import { TELEGRAM_QUEUE_PORT } from '../queue/telegram-queue.port';
 import type { TelegramQueuePort } from '../queue/telegram-queue.port';
@@ -53,6 +55,7 @@ export class SendDigestUseCase {
     });
 
     const toSend = [];
+    const seenFingerprints = new Set<string>();
     let skippedAlreadySent = 0;
 
     const minScore = Number(this.config.get('MIN_DIGEST_SCORE') ?? 25);
@@ -60,6 +63,21 @@ export class SendDigestUseCase {
     const searchCriteria = this.criteria.get();
 
     for (const item of candidates) {
+      if (
+        item.source === 'casa.it' &&
+        (item.rentEur == null ||
+          !isMeaningfulListingTitle(item.title) ||
+          (item.areaSqm == null && !item.locationHint?.trim()))
+      ) {
+        skippedAlreadySent++;
+        this.log.debug('telegram', 'Skip — incomplete Casa listing', {
+          id: item.id,
+          title: item.title,
+          rentEur: item.rentEur,
+          areaSqm: item.areaSqm,
+        });
+        continue;
+      }
       if (!meetsHardCriteria(item, searchCriteria)) {
         skippedAlreadySent++;
         this.log.debug('telegram', 'Skip — hard criteria', {
@@ -78,7 +96,26 @@ export class SendDigestUseCase {
         skippedAlreadySent++;
         continue;
       }
+      const fingerprint =
+        item.listingFingerprint ??
+        computeListingFingerprint({
+          title: item.title ?? undefined,
+          locationHint: item.locationHint ?? undefined,
+          rentEur: item.rentEur ?? undefined,
+          rooms: item.rooms ?? undefined,
+          areaSqm: item.areaSqm ?? undefined,
+        });
+      if (fingerprint && seenFingerprints.has(fingerprint)) {
+        skippedAlreadySent++;
+        this.log.debug('telegram', 'Skip — duplicate property (fingerprint)', {
+          id: item.id,
+          fingerprint,
+        });
+        continue;
+      }
+
       if (await this.listings.shouldSendToTelegram(item.id)) {
+        if (fingerprint) seenFingerprints.add(fingerprint);
         toSend.push(item);
         this.log.debug('telegram', 'Queued for send', {
           id: item.id,

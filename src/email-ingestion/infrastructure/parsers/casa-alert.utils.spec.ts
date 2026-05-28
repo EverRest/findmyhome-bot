@@ -1,4 +1,8 @@
-import { parseCasaAlertSubject } from './casa-alert.utils';
+import {
+  buildCasaListingTitle,
+  isMeaningfulListingTitle,
+  parseCasaAlertSubject,
+} from './casa-alert.utils';
 
 describe('parseCasaAlertSubject', () => {
   it('parses rent, area and address from subject', () => {
@@ -9,5 +13,29 @@ describe('parseCasaAlertSubject', () => {
     expect(p.areaSqm).toBe(88);
     expect(p.locationHint).toContain('Filadelfia');
     expect(p.title).toContain('88 m²');
+  });
+});
+
+describe('isMeaningfulListingTitle', () => {
+  it('rejects empty, Listing, and CTA text', () => {
+    expect(isMeaningfulListingTitle(undefined)).toBe(false);
+    expect(isMeaningfulListingTitle('Listing')).toBe(false);
+    expect(isMeaningfulListingTitle('Vedi 1 foto e dettagli')).toBe(false);
+    expect(
+      isMeaningfulListingTitle('65 m² — Via Cesare Balbo 42, Torino'),
+    ).toBe(true);
+  });
+});
+
+describe('buildCasaListingTitle', () => {
+  it('builds title from area and location when CTA has no text', () => {
+    expect(
+      buildCasaListingTitle({
+        title: 'Vedi foto',
+        areaSqm: 66,
+        locationHint: 'Via Bligny 9, Torino',
+        rentEur: 550,
+      }),
+    ).toBe('66 m² — Via Bligny 9, Torino');
   });
 });

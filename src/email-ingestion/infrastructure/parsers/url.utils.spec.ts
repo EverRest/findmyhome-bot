@@ -16,6 +16,19 @@ describe('url.utils', () => {
     ).toBe('https://www.idealista.it/immobile/123');
   });
 
+  it('normalizes casa.it immobili id and drops aid param', () => {
+    expect(
+      canonicalizeUrl(
+        'https://www.casa.it/immobili/54086676/?aid=MTU1NjA4MTY%3D&utm_source=alerts',
+      ),
+    ).toBe('https://www.casa.it/immobili/54086676/');
+    expect(
+      canonicalizeUrl(
+        'https://www.casa.it/immobili/54086676/?aid=MTU1NjA4MzU%3D',
+      ),
+    ).toBe('https://www.casa.it/immobili/54086676/');
+  });
+
   it('extracts eur and rooms', () => {
     expect(extractEur('Affitto 850 €/mese')).toBe(850);
     expect(extractEur('San Salvario € 750/month')).toBe(750);

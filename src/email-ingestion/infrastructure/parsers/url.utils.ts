@@ -11,6 +11,19 @@ export function canonicalizeUrl(raw: string): string | null {
     const url = new URL(raw);
     UTM_PARAMS.forEach((p) => url.searchParams.delete(p));
     url.hash = '';
+
+    const host = url.hostname.replace(/^www\./, '').toLowerCase();
+    if (host.endsWith('casa.it')) {
+      const immobile = url.pathname.match(/\/immobili\/(\d+)/i);
+      if (immobile) {
+        return `https://www.casa.it/immobili/${immobile[1]}/`;
+      }
+      const annunci = url.pathname.match(/\/annunci\/(\d+)/i);
+      if (annunci) {
+        return `https://www.casa.it/annunci/${annunci[1]}/`;
+      }
+    }
+
     return url.toString();
   } catch {
     return null;

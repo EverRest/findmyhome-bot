@@ -25,6 +25,7 @@ describe('PrismaListingRepository', () => {
 
   it('upsertFromDraft creates new', async () => {
     prisma.listing.findUnique.mockResolvedValue(null);
+    prisma.listing.findFirst.mockResolvedValue(null);
     prisma.listing.create.mockResolvedValue({ id: 'lid' });
     const r = await repo.upsertFromDraft({
       canonicalUrl: 'https://x/1',
@@ -35,11 +36,76 @@ describe('PrismaListingRepository', () => {
     expect(r.isNew).toBe(true);
   });
 
+  it('upsertFromDraft merges by fingerprint when canonical URL differs', async () => {
+    prisma.listing.findUnique.mockResolvedValue(null);
+    prisma.listing.findFirst.mockResolvedValue({
+      id: 'existing-id',
+      canonicalUrl: 'https://www.immobiliare.it/annunci/alert-abc/',
+      listingUrl: 'https://clicks.immobiliare.it/track',
+      alternateUrls: '[]',
+      rentEur: 600,
+      materialHash: 'old',
+      listingFingerprint: 'via-prali-2|r3|a60|€600',
+      title: '3-room flat via Prali 2',
+      condoFeeEur: null,
+      totalCostEur: 600,
+      areaSqm: 60,
+      rooms: 3,
+      addressRaw: null,
+      locationHint: 'via Prali 2',
+      floor: null,
+      hasLift: null,
+      rawSnippet: null,
+      priceChangedAt: null,
+      source: 'immobiliare',
+      externalId: null,
+    });
+    prisma.listing.update.mockResolvedValue({ id: 'existing-id' });
+
+    const r = await repo.upsertFromDraft({
+      canonicalUrl: 'https://www.idealista.it/immobile/35847065/',
+      listingUrl: 'https://www.idealista.it/immobile/35847065/',
+      title: 'Trilocale in Via Prali, 2, Cenisia, Torino',
+      locationHint: 'Via Prali, 2, Cenisia, Torino',
+      rentEur: 600,
+      rooms: 3,
+      areaSqm: 60,
+    });
+
+    expect(r.isNew).toBe(false);
+    expect(prisma.listing.create).not.toHaveBeenCalled();
+    expect(prisma.listing.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'existing-id' },
+        data: expect.objectContaining({
+          listingUrl: 'https://www.idealista.it/immobile/35847065/',
+        }),
+      }),
+    );
+  });
+
   it('upsertFromDraft updates existing', async () => {
     prisma.listing.findUnique.mockResolvedValue({
       id: 'lid',
+      canonicalUrl: 'https://x/1',
       rentEur: 700,
       materialHash: 'old',
+      alternateUrls: '[]',
+      listingUrl: null,
+      title: null,
+      condoFeeEur: null,
+      totalCostEur: null,
+      areaSqm: null,
+      rooms: null,
+      addressRaw: null,
+      locationHint: null,
+      floor: null,
+      hasLift: null,
+      rawSnippet: null,
+      priceChangedAt: null,
+      listingFingerprint: null,
+      source: null,
+      externalId: null,
     });
     prisma.listing.update.mockResolvedValue({ id: 'lid' });
     const r = await repo.upsertFromDraft({

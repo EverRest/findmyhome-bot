@@ -58,6 +58,8 @@ model Listing {
   dismissedAt       DateTime?
   savedAt           DateTime?
   scores            ListingScore[]
+
+  @@index([listingFingerprint])
 }
 
 model ListingScore {

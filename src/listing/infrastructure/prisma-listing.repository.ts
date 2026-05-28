@@ -2,6 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PrismaService } from '../../shared/infrastructure/prisma.service';
 import { ListingDraft } from '../domain/listing-draft';
+import { computeListingFingerprint } from '../domain/listing-fingerprint';
+import {
+  pickBetterTitle,
+  pickPreferredListingUrl,
+} from '../domain/listing-url-preference';
 import {
   ListingForDigest,
   ListingRepositoryPort,
@@ -75,9 +80,17 @@ export class PrismaListingRepository implements ListingRepositoryPort {
         : (draft.rentEur ?? null);
 
     const materialHash = this.hashMaterial(draft);
-    const existing = await this.prisma.listing.findUnique({
+    const fingerprint = computeListingFingerprint(draft);
+
+    let existing = await this.prisma.listing.findUnique({
       where: { canonicalUrl: draft.canonicalUrl },
     });
+
+    if (!existing && fingerprint) {
+      existing = await this.prisma.listing.findFirst({
+        where: { listingFingerprint: fingerprint },
+      });
+    }
 
     if (!existing) {
       const created = await this.prisma.listing.create({
@@ -98,6 +111,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
           hasLift: draft.hasLift,
           rawSnippet: draft.rawSnippet,
           materialHash,
+          listingFingerprint: fingerprint ?? undefined,
         },
       });
       return {
@@ -113,12 +127,20 @@ export class PrismaListingRepository implements ListingRepositoryPort {
       existing.rentEur != null &&
       draft.rentEur !== existing.rentEur;
     const materialChanged = existing.materialHash !== materialHash;
+    const alternateUrls = this.mergeAlternateUrls(
+      existing.alternateUrls,
+      existing.canonicalUrl,
+      draft.canonicalUrl,
+    );
 
     const updated = await this.prisma.listing.update({
       where: { id: existing.id },
       data: {
-        listingUrl: draft.listingUrl ?? existing.listingUrl,
-        title: draft.title ?? existing.title,
+        listingUrl: pickPreferredListingUrl(
+          existing.listingUrl,
+          draft.listingUrl,
+        ),
+        title: pickBetterTitle(existing.title, draft.title),
         addressRaw: draft.addressRaw ?? existing.addressRaw,
         locationHint: draft.locationHint ?? existing.locationHint,
         rentEur: draft.rentEur ?? existing.rentEur,
@@ -130,6 +152,10 @@ export class PrismaListingRepository implements ListingRepositoryPort {
         hasLift: draft.hasLift ?? existing.hasLift,
         rawSnippet: draft.rawSnippet ?? existing.rawSnippet,
         materialHash,
+        listingFingerprint: fingerprint ?? existing.listingFingerprint,
+        alternateUrls,
+        source: draft.source ?? existing.source,
+        externalId: draft.externalId ?? existing.externalId,
         lastSeenAt: new Date(),
         priceChangedAt: priceChanged ? new Date() : existing.priceChangedAt,
       },
@@ -221,6 +247,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
     areaSqm: number | null;
     rooms: number | null;
     locationHint: string | null;
+    listingFingerprint: string | null;
     telegramSentAt: Date | null;
     priceChangedAt: Date | null;
     scores: {
@@ -245,6 +272,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
       areaSqm: r.areaSqm,
       rooms: r.rooms,
       locationHint: r.locationHint,
+      listingFingerprint: r.listingFingerprint,
       score: score.score,
       reasons: JSON.parse(score.reasons) as string[],
       aiSuggestion: score.llmSummary?.trim() || null,
@@ -258,6 +286,21 @@ export class PrismaListingRepository implements ListingRepositoryPort {
   countDuplicateSkipsSince(_since: Date): Promise<number> {
     void _since;
     return Promise.resolve(0);
+  }
+
+  private mergeAlternateUrls(
+    existingJson: string,
+    existingCanonical: string,
+    incomingCanonical: string,
+  ): string {
+    const urls = new Set<string>(
+      JSON.parse(existingJson || '[]') as string[],
+    );
+    if (existingCanonical !== incomingCanonical) {
+      urls.add(existingCanonical);
+      urls.add(incomingCanonical);
+    }
+    return JSON.stringify([...urls]);
   }
 
   private hashMaterial(draft: ListingDraft): string {

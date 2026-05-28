@@ -85,6 +85,49 @@ describe('GenericLinkParser', () => {
     expect(drafts[0].title).not.toMatch(/vedi\s+foto/i);
   });
 
+  it('parses casa.it card block when subject is not Un nuovo annuncio', () => {
+    const html = `
+      <table>
+        <tr>
+          <td>
+            Appartamento in affitto in Largo Sempione 164, Barriera di Milano, Torino
+            € 570 · 65 m² · 2 locali
+            <a href="https://www.casa.it/immobili/54086127/?aid=abc">Vedi foto e dettagli</a>
+          </td>
+        </tr>
+      </table>`;
+    const drafts = parser.parse({
+      gmailMessageId: 'casa2',
+      subject: 'guarda i nuovi annunci per la tua ricerca Torino',
+      fromAddress: '"Casa.it" <noreply@casa.it>',
+      receivedAt: new Date(),
+      htmlBody: html,
+      textBody: '',
+    });
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0].rentEur).toBe(570);
+    expect(drafts[0].areaSqm).toBe(65);
+    expect(drafts[0].title).toMatch(/65 m²|Largo Sempione/i);
+    expect(drafts[0].canonicalUrl).toBe(
+      'https://www.casa.it/immobili/54086127/',
+    );
+  });
+
+  it('deduplicates casa links that differ only by aid', () => {
+    const html = `
+      <a href="https://www.casa.it/immobili/54086676/?aid=MTU1NjA4MTY">Vedi</a>
+      <a href="https://www.casa.it/immobili/54086676/?aid=MTU1NjA4MzU">Vedi</a>`;
+    const drafts = parser.parse({
+      gmailMessageId: 'casa-dup',
+      subject: 'Un nuovo annuncio: 550 € | 66 mq | Via Bligny 9, Torino',
+      fromAddress: '"Casa.it" <noreply@casa.it>',
+      receivedAt: new Date(),
+      htmlBody: html,
+      textBody: '',
+    });
+    expect(drafts).toHaveLength(1);
+  });
+
   it('parses Turin zone in snippet', () => {
     const html = `<a href="https://www.idealista.it/affitto/1/">3 locali, Cenisia, 750 €/mese</a>`;
     const drafts = parser.parse({

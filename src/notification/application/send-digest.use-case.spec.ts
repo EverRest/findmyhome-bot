@@ -81,6 +81,54 @@ describe('SendDigestUseCase', () => {
     expect(sent).toBe(1);
   });
 
+  it('sends only one Telegram card per property fingerprint', async () => {
+    telegram.isConfigured.mockReturnValue(true);
+    const fp = 'via-prali-2|r3|a60|€600';
+    listings.findTopForDigest.mockResolvedValue([
+      {
+        id: 'idealista',
+        canonicalUrl: 'https://www.idealista.it/immobile/35847065/',
+        listingUrl: 'https://www.idealista.it/immobile/35847065/',
+        source: 'idealista',
+        title: 'Trilocale in Via Prali, 2, Cenisia, Torino',
+        rentEur: 600,
+        areaSqm: 65,
+        rooms: 3,
+        locationHint: 'Via Prali, 2, Cenisia, Torino',
+        listingFingerprint: fp,
+        score: 59,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+      {
+        id: 'immobiliare',
+        canonicalUrl: 'https://www.immobiliare.it/annunci/alert-abc/',
+        listingUrl: 'https://clicks.immobiliare.it/track',
+        source: 'immobiliare',
+        title: '3-room flat via Prali 2, Cenisia, Turin',
+        rentEur: 600,
+        areaSqm: 65,
+        rooms: 3,
+        locationHint: 'via Prali 2, Cenisia, Turin',
+        listingFingerprint: fp,
+        score: 59,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+    ]);
+    listings.shouldSendToTelegram.mockResolvedValue(true);
+
+    const sent = await useCase.execute({
+      listingsNew: 0,
+      duplicatesSkipped: 0,
+    });
+    expect(sent).toBe(1);
+  });
+
   it('returns 0 when telegram not configured', async () => {
     telegram.isConfigured.mockReturnValue(false);
     expect(

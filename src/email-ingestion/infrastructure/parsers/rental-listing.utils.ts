@@ -1,5 +1,6 @@
 import { IncomingEmail } from '../../domain/incoming-email';
 import { ListingDraft } from '../../../listing/domain/listing-draft';
+import { isCasaAlertEmail, isMeaningfulListingTitle } from './casa-alert.utils';
 
 /**
  * Sale alerts (Idealista vendita, Immobiliare vendita) must not enter the DB.
@@ -57,6 +58,13 @@ export function shouldPersistListingDraft(
 
   if (email.fromAddress.toLowerCase().includes('idealista')) {
     return draft.rentEur != null && hasMonthlyRentHint(`${snippet} ${title}`);
+  }
+
+  if (isCasaAlertEmail(email.fromAddress)) {
+    if (draft.rentEur == null) return false;
+    if (!isMeaningfulListingTitle(draft.title)) return false;
+    if (draft.areaSqm == null && !draft.locationHint?.trim()) return false;
+    return true;
   }
 
   if (

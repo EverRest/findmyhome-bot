@@ -14,6 +14,7 @@ function base(overrides: Partial<ListingForDigest> = {}): ListingForDigest {
     areaSqm: 72,
     rooms: 2,
     locationHint: 'Cenisia',
+    listingFingerprint: null,
     score: 80,
     reasons: ['ok'],
     aiSuggestion: null,

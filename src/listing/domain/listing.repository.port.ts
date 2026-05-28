@@ -21,6 +21,7 @@ export interface ListingForDigest {
   areaSqm: number | null;
   rooms: number | null;
   locationHint: string | null;
+  listingFingerprint: string | null;
   score: number;
   reasons: string[];
   /** One-sentence AI tip for Telegram (from Ollama summary). */

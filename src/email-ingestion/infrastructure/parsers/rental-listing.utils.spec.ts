@@ -90,6 +90,35 @@ describe('rental-listing.utils', () => {
     ).toBe(false);
   });
 
+  it('skips Casa drafts without rent, title, or location', () => {
+    const email = {
+      fromAddress: '"Casa.it" <noreply@casa.it>',
+      subject: 'news',
+      htmlBody: '',
+      textBody: '',
+    };
+    expect(
+      shouldPersistListingDraft(
+        {
+          canonicalUrl: 'https://www.casa.it/immobili/1/',
+          title: 'Listing',
+        },
+        email,
+      ),
+    ).toBe(false);
+    expect(
+      shouldPersistListingDraft(
+        {
+          canonicalUrl: 'https://www.casa.it/immobili/2/',
+          title: '66 m² — Via Bligny 9, Torino',
+          rentEur: 550,
+          areaSqm: 66,
+        },
+        email,
+      ),
+    ).toBe(true);
+  });
+
   it('skips Idealista drafts without monthly rent', () => {
     expect(
       shouldPersistListingDraft(
