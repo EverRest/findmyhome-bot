@@ -74,7 +74,10 @@ describe('SendDigestUseCase', () => {
     ]);
     listings.shouldSendToTelegram.mockResolvedValue(true);
 
-    const sent = await useCase.execute({ listingsNew: 1, duplicatesSkipped: 0 });
+    const sent = await useCase.execute({
+      listingsNew: 1,
+      duplicatesSkipped: 0,
+    });
     expect(sent).toBe(1);
   });
 

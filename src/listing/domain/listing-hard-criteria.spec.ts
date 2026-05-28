@@ -19,16 +19,18 @@ describe('meetsHardCriteria', () => {
       },
       criteria,
     );
-    expect(meetsHardCriteria(
-      {
-        title: 'Monolocale',
-        rooms: 1,
-        areaSqm: 27,
-        rentEur: 500,
-        locationHint: 'Crocetta',
-      },
-      criteria,
-    )).toBe(false);
+    expect(
+      meetsHardCriteria(
+        {
+          title: 'Monolocale',
+          rooms: 1,
+          areaSqm: 27,
+          rentEur: 500,
+          locationHint: 'Crocetta',
+        },
+        criteria,
+      ),
+    ).toBe(false);
     expect(failures.some((f) => f.includes('rooms'))).toBe(true);
     expect(failures.some((f) => f.includes('m²'))).toBe(true);
   });
