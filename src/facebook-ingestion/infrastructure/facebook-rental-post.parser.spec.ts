@@ -1,7 +1,9 @@
 import { FacebookRentalPostParser } from './facebook-rental-post.parser';
 import type { IncomingFacebookPost } from '../domain/incoming-facebook-post';
 
-function mkPost(overrides: Partial<IncomingFacebookPost> = {}): IncomingFacebookPost {
+function mkPost(
+  overrides: Partial<IncomingFacebookPost> = {},
+): IncomingFacebookPost {
   return {
     postId: 'p-1',
     groupId: 'g-1',
@@ -33,7 +35,9 @@ describe('FacebookRentalPostParser', () => {
     const drafts = parser.parse(post);
 
     expect(drafts).toHaveLength(1);
-    expect(drafts[0].canonicalUrl).toBe('https://www.idealista.it/immobile/123/');
+    expect(drafts[0].canonicalUrl).toBe(
+      'https://www.idealista.it/immobile/123/',
+    );
     expect(drafts[0].listingUrl).toBe(
       'https://www.idealista.it/immobile/123/?utm_source=fb',
     );
