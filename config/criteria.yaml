@@ -1,7 +1,8 @@
 notes: |
-  Family with a child. ... rooms. Turin.
-  Target zones: ....
-  Rent strictly ... EUR/month; area strictly ... m².
+  Family with a child. 2-3 rooms. Turin.
+  Target zones: Cenisia, Cit Turin, Pozzo Strada,
+  San Donato (border), near Piazza Bernini.
+  Rent strictly 300–800 EUR/month; area strictly 50–90 m².
 
 locale: en
 
@@ -50,9 +51,9 @@ scoring:
   rulesWeight: 0.3
   zoneMissPenalty: 20
   referencePoint:
-    name:
-    lat:
-    lng:
+    name: via Medici
+    lat: 45.08004414290359
+    lng: 7.6444000110148
   geocoding:
     enabled: true
     provider: nominatim
