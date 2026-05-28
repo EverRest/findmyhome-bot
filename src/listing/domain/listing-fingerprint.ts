@@ -16,10 +16,8 @@ export function computeListingFingerprint(
     draft.rawSnippet ?? ''
   }`;
   const street = normalizeStreetKey(blob);
-  const rooms =
-    draft.rooms != null ? String(Math.round(draft.rooms)) : null;
-  const area =
-    draft.areaSqm != null ? String(Math.round(draft.areaSqm)) : null;
+  const rooms = draft.rooms != null ? String(Math.round(draft.rooms)) : null;
+  const area = draft.areaSqm != null ? String(Math.round(draft.areaSqm)) : null;
 
   if (!street) return null;
 
@@ -51,9 +49,7 @@ export function normalizeStreetKey(text: string): string | null {
     return `via-${inlineVia[1]}-${inlineVia[2]}`;
   }
 
-  const commaStreet = blob.match(
-    /\bvia\s+([a-z0-9]+)\s*,\s*(\d+[a-z]?)\b/i,
-  );
+  const commaStreet = blob.match(/\bvia\s+([a-z0-9]+)\s*,\s*(\d+[a-z]?)\b/i);
   if (commaStreet) {
     return `via-${commaStreet[1]}-${commaStreet[2]}`;
   }

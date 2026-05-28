@@ -293,9 +293,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
     existingCanonical: string,
     incomingCanonical: string,
   ): string {
-    const urls = new Set<string>(
-      JSON.parse(existingJson || '[]') as string[],
-    );
+    const urls = new Set<string>(JSON.parse(existingJson || '[]') as string[]);
     if (existingCanonical !== incomingCanonical) {
       urls.add(existingCanonical);
       urls.add(incomingCanonical);

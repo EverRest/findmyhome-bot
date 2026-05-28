@@ -3,8 +3,8 @@ export function pickPreferredListingUrl(
   existing: string | null | undefined,
   incoming: string | undefined,
 ): string | undefined {
-  const candidates = [incoming, existing].filter(
-    (u): u is string => Boolean(u?.trim()),
+  const candidates = [incoming, existing].filter((u): u is string =>
+    Boolean(u?.trim()),
   );
   if (!candidates.length) return undefined;
   candidates.sort((a, b) => listingUrlScore(b) - listingUrlScore(a));
