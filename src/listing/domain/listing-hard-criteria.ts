@@ -1,5 +1,4 @@
 import type { SearchCriteria } from '../../shared/infrastructure/criteria.types';
-import { matchZones } from '../../scoring/domain/zone-matcher';
 
 export interface HardCriteriaFields {
   title?: string | null;
@@ -74,13 +73,8 @@ export function getHardCriteriaFailures(
     failures.push(`total ${total}€ > ${h.totalCostMaxEur}€`);
   }
 
-  const zones = h.zones ?? [];
-  if (zones.length > 0 && text.replace(/\s+/g, ' ').trim().length >= 8) {
-    const zoneHit = matchZones(text, zones);
-    if (!zoneHit.matched) {
-      failures.push('zone not in target areas');
-    }
-  }
+  // Zone mismatch is no longer a hard reject.
+  // It is still reflected in scoring penalties downstream.
 
   return failures;
 }

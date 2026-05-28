@@ -81,7 +81,7 @@ describe('meetsHardCriteria', () => {
     ).toBe(false);
   });
 
-  it('rejects wrong zone when location text is present', () => {
+  it('accepts non-target zone when other hard criteria match', () => {
     expect(
       meetsHardCriteria(
         {
@@ -93,6 +93,6 @@ describe('meetsHardCriteria', () => {
         },
         criteria,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 });
