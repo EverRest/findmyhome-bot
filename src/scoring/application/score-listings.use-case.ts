@@ -36,6 +36,7 @@ export class ScoreListingsUseCase {
       include: {
         scores: { orderBy: { scoredAt: 'desc' }, take: 1 },
       },
+      orderBy: { lastSeenAt: 'desc' },
       take: 100,
     });
 
