@@ -38,4 +38,13 @@ describe('buildCasaListingTitle', () => {
       }),
     ).toBe('66 m² — Via Bligny 9, Torino');
   });
+
+  it('falls back to rent-only title when area and location are missing', () => {
+    expect(
+      buildCasaListingTitle({
+        title: 'Vedi foto',
+        rentEur: 550,
+      }),
+    ).toBe('Affitto 550 €/mese');
+  });
 });

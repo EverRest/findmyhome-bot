@@ -130,6 +130,43 @@ describe('FetchAndParseEmailsUseCase', () => {
     expect(r.listingsParsed).toBe(0);
   });
 
+  it('skips drafts failing hard criteria', async () => {
+    gmail.isConfigured.mockReturnValue(true);
+    gmail.fetchSince.mockResolvedValue([
+      {
+        gmailMessageId: 'm-hard',
+        subject: 'Un nuovo annuncio: 500 € | 27 mq | Crocetta, Torino',
+        fromAddress: '"Casa.it" <noreply@casa.it>',
+        receivedAt: new Date(),
+        htmlBody: '<a href="https://www.casa.it/immobili/99/">monolocale</a>',
+        textBody: '',
+      },
+    ]);
+    listings.existsProcessedEmail.mockResolvedValue(false);
+    parsers.parse.mockReturnValue([
+      {
+        canonicalUrl: 'https://www.casa.it/immobili/99/',
+        title: 'Monolocale Crocetta Torino',
+        locationHint: 'Crocetta, Torino',
+        rooms: 1,
+        areaSqm: 27,
+        rentEur: 500,
+        rawSnippet: 'affitto monolocale 500 euro/mese',
+      },
+    ]);
+
+    const r = await useCase.execute(new Date());
+    expect(r.listingsParsed).toBe(0);
+    expect(listings.upsertFromDraft).not.toHaveBeenCalled();
+    expect(log._ctx.debug).toHaveBeenCalledWith(
+      'listing',
+      'Skip — hard criteria',
+      expect.objectContaining({
+        url: 'https://www.casa.it/immobili/99/',
+      }),
+    );
+  });
+
   it('skips already processed emails', async () => {
     gmail.isConfigured.mockReturnValue(true);
     gmail.fetchSince.mockResolvedValue([
