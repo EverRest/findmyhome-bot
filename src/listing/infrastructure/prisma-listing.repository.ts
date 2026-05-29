@@ -3,6 +3,8 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../../shared/infrastructure/prisma.service';
 import { ListingDraft } from '../domain/listing-draft';
 import { computeListingFingerprint } from '../domain/listing-fingerprint';
+import { computePropertyMatchKey } from '../domain/listing-property-match';
+import { assignPossibleDuplicateLinks } from '../domain/reconcile-possible-duplicates';
 import {
   pickBetterTitle,
   pickPreferredListingUrl,
@@ -81,6 +83,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
 
     const materialHash = this.hashMaterial(draft);
     const fingerprint = computeListingFingerprint(draft);
+    const propertyMatchKey = computePropertyMatchKey(draft);
 
     let existing = await this.prisma.listing.findUnique({
       where: { canonicalUrl: draft.canonicalUrl },
@@ -112,8 +115,12 @@ export class PrismaListingRepository implements ListingRepositoryPort {
           rawSnippet: draft.rawSnippet,
           materialHash,
           listingFingerprint: fingerprint ?? undefined,
+          propertyMatchKey: propertyMatchKey ?? undefined,
         },
       });
+      if (propertyMatchKey) {
+        await this.reconcilePropertyMatchGroup(propertyMatchKey);
+      }
       return {
         listingId: created.id,
         isNew: true,
@@ -153,6 +160,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
         rawSnippet: draft.rawSnippet ?? existing.rawSnippet,
         materialHash,
         listingFingerprint: fingerprint ?? existing.listingFingerprint,
+        propertyMatchKey: propertyMatchKey ?? existing.propertyMatchKey,
         alternateUrls,
         source: draft.source ?? existing.source,
         externalId: draft.externalId ?? existing.externalId,
@@ -161,12 +169,90 @@ export class PrismaListingRepository implements ListingRepositoryPort {
       },
     });
 
+    const matchKey = propertyMatchKey ?? updated.propertyMatchKey;
+    if (matchKey) {
+      await this.reconcilePropertyMatchGroup(matchKey);
+    }
+
     return {
       listingId: updated.id,
       isNew: false,
       priceChanged,
       materialChanged,
     };
+  }
+
+  async reconcilePossibleDuplicates(): Promise<number> {
+    await this.backfillPropertyMatchKeys();
+
+    const keys = await this.prisma.listing.findMany({
+      where: { dismissedAt: null, propertyMatchKey: { not: null } },
+      select: { propertyMatchKey: true },
+      distinct: ['propertyMatchKey'],
+    });
+
+    let updated = 0;
+    for (const { propertyMatchKey } of keys) {
+      if (propertyMatchKey) {
+        updated += await this.reconcilePropertyMatchGroup(propertyMatchKey);
+      }
+    }
+    return updated;
+  }
+
+  private async backfillPropertyMatchKeys(): Promise<void> {
+    const rows = await this.prisma.listing.findMany({
+      where: { dismissedAt: null, propertyMatchKey: null },
+      select: {
+        id: true,
+        title: true,
+        locationHint: true,
+        rentEur: true,
+        rooms: true,
+        rawSnippet: true,
+      },
+    });
+
+    for (const row of rows) {
+      const key = computePropertyMatchKey({
+        title: row.title ?? undefined,
+        locationHint: row.locationHint ?? undefined,
+        rentEur: row.rentEur ?? undefined,
+        rooms: row.rooms ?? undefined,
+        rawSnippet: row.rawSnippet ?? undefined,
+      });
+      if (!key) continue;
+      await this.prisma.listing.update({
+        where: { id: row.id },
+        data: { propertyMatchKey: key },
+      });
+    }
+  }
+
+  private async reconcilePropertyMatchGroup(
+    propertyMatchKey: string,
+  ): Promise<number> {
+    const group = await this.prisma.listing.findMany({
+      where: { dismissedAt: null, propertyMatchKey },
+      select: {
+        id: true,
+        firstSeenAt: true,
+        possibleDuplicateOfId: true,
+      },
+    });
+
+    const assignments = assignPossibleDuplicateLinks(group);
+    let updated = 0;
+    for (const [id, duplicateOfId] of assignments) {
+      const current = group.find((r) => r.id === id);
+      if (current?.possibleDuplicateOfId === duplicateOfId) continue;
+      await this.prisma.listing.update({
+        where: { id },
+        data: { possibleDuplicateOfId: duplicateOfId },
+      });
+      updated++;
+    }
+    return updated;
   }
 
   async shouldSendToTelegram(listingId: string): Promise<boolean> {
@@ -204,9 +290,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
   async findByIdForDigest(id: string): Promise<ListingForDigest | null> {
     const row = await this.prisma.listing.findUnique({
       where: { id },
-      include: {
-        scores: { orderBy: { scoredAt: 'desc' }, take: 1 },
-      },
+      include: this.digestInclude(),
     });
     if (!row || row.dismissedAt) return null;
     return this.mapRowToDigest(row);
@@ -215,9 +299,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
   async findTopForDigest(limit: number): Promise<ListingForDigest[]> {
     const rows = await this.prisma.listing.findMany({
       where: { dismissedAt: null, scores: { some: {} } },
-      include: {
-        scores: { orderBy: { scoredAt: 'desc' }, take: 1 },
-      },
+      include: this.digestInclude(),
       take: limit * 3,
     });
 
@@ -233,6 +315,20 @@ export class PrismaListingRepository implements ListingRepositoryPort {
     });
 
     return mapped.slice(0, limit);
+  }
+
+  private digestInclude() {
+    return {
+      scores: { orderBy: { scoredAt: 'desc' as const }, take: 1 },
+      possibleDuplicateOf: {
+        select: {
+          id: true,
+          source: true,
+          canonicalUrl: true,
+          title: true,
+        },
+      },
+    };
   }
 
   private mapRowToDigest(r: {
@@ -251,6 +347,12 @@ export class PrismaListingRepository implements ListingRepositoryPort {
     distanceToRefM: number | null;
     telegramSentAt: Date | null;
     priceChangedAt: Date | null;
+    possibleDuplicateOf: {
+      id: string;
+      source: string | null;
+      canonicalUrl: string;
+      title: string | null;
+    } | null;
     scores: {
       score: number;
       reasons: string;
@@ -274,6 +376,7 @@ export class PrismaListingRepository implements ListingRepositoryPort {
       rooms: r.rooms,
       locationHint: r.locationHint,
       listingFingerprint: r.listingFingerprint,
+      possibleDuplicateOf: r.possibleDuplicateOf,
       distanceToRefM: r.distanceToRefM,
       score: score.score,
       reasons: JSON.parse(score.reasons) as string[],

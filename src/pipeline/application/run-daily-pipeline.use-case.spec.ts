@@ -22,7 +22,10 @@ describe('RunDailyPipelineUseCase', () => {
   };
   const scoreListings = { execute: jest.fn() };
   const sendDigest = { execute: jest.fn() };
-  const listings = { findTopForDigest: jest.fn().mockResolvedValue([]) };
+  const listings = {
+    findTopForDigest: jest.fn().mockResolvedValue([]),
+    reconcilePossibleDuplicates: jest.fn().mockResolvedValue(0),
+  };
   const log = mockStepLogger();
 
   const useCase = new RunDailyPipelineUseCase(

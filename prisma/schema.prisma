@@ -49,6 +49,10 @@ model Listing {
   hasLift           Boolean?
   rawSnippet        String?
   listingFingerprint String?
+  propertyMatchKey   String?
+  possibleDuplicateOfId String?
+  possibleDuplicateOf Listing? @relation("ListingPossibleDuplicate", fields: [possibleDuplicateOfId], references: [id], onDelete: SetNull)
+  possibleDuplicateOfFor Listing[] @relation("ListingPossibleDuplicate")
   lat               Float?
   lng               Float?
   geocodeSource     String?
@@ -66,6 +70,8 @@ model Listing {
   scores            ListingScore[]
 
   @@index([listingFingerprint])
+  @@index([propertyMatchKey])
+  @@index([possibleDuplicateOfId])
 }
 
 model GeocodeCache {

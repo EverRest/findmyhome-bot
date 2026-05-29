@@ -9,6 +9,13 @@ export interface UpsertListingResult {
   materialChanged: boolean;
 }
 
+export interface PossibleDuplicateRef {
+  id: string;
+  source: string | null;
+  canonicalUrl: string;
+  title: string | null;
+}
+
 export interface ListingForDigest {
   id: string;
   canonicalUrl: string;
@@ -22,6 +29,7 @@ export interface ListingForDigest {
   rooms: number | null;
   locationHint: string | null;
   listingFingerprint: string | null;
+  possibleDuplicateOf: PossibleDuplicateRef | null;
   distanceToRefM: number | null;
   score: number;
   reasons: string[];
@@ -57,6 +65,9 @@ export interface ListingRepositoryPort {
   ): Promise<void>;
 
   upsertFromDraft(draft: ListingDraft): Promise<UpsertListingResult>;
+
+  /** Re-link possibleDuplicateOfId by propertyMatchKey (street + rooms + rent). */
+  reconcilePossibleDuplicates(): Promise<number>;
 
   shouldSendToTelegram(listingId: string): Promise<boolean>;
   markTelegramSent(listingId: string, messageId?: string): Promise<void>;

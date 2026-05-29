@@ -5,7 +5,10 @@ describe('PrismaListingRepository', () => {
   const prisma = createPrismaMock();
   const repo = new PrismaListingRepository(prisma as never);
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.listing.findMany.mockResolvedValue([]);
+  });
 
   it('existsProcessedEmail', async () => {
     prisma.processedEmail.findUnique.mockResolvedValue({ id: '1' });
@@ -116,6 +119,62 @@ describe('PrismaListingRepository', () => {
     });
     expect(r.isNew).toBe(false);
     expect(r.priceChanged).toBe(true);
+  });
+
+  it('reconcilePossibleDuplicates backfills propertyMatchKey before linking', async () => {
+    prisma.listing.findMany
+      .mockResolvedValueOnce([
+        {
+          id: 'lid',
+          title: 'Bilocale via Roma 1, Torino',
+          locationHint: 'Via Roma 1, Torino',
+          rentEur: 600,
+          rooms: 2,
+          rawSnippet: null,
+        },
+      ])
+      .mockResolvedValueOnce([{ propertyMatchKey: 'via-roma-1|r2|€600' }])
+      .mockResolvedValueOnce([
+        {
+          id: 'lid',
+          firstSeenAt: new Date('2026-01-01'),
+          possibleDuplicateOfId: null,
+        },
+      ]);
+    prisma.listing.update.mockResolvedValue({});
+
+    await repo.reconcilePossibleDuplicates();
+
+    expect(prisma.listing.update).toHaveBeenCalledWith({
+      where: { id: 'lid' },
+      data: { propertyMatchKey: 'via-roma-1|r2|€600' },
+    });
+  });
+
+  it('reconcilePossibleDuplicates marks newer row as possible duplicate', async () => {
+    prisma.listing.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ propertyMatchKey: 'via-prali-2|r3|€600' }])
+      .mockResolvedValueOnce([
+        {
+          id: 'older',
+          firstSeenAt: new Date('2026-01-01'),
+          possibleDuplicateOfId: null,
+        },
+        {
+          id: 'newer',
+          firstSeenAt: new Date('2026-02-01'),
+          possibleDuplicateOfId: null,
+        },
+      ]);
+    prisma.listing.update.mockResolvedValue({});
+
+    const updated = await repo.reconcilePossibleDuplicates();
+    expect(updated).toBe(1);
+    expect(prisma.listing.update).toHaveBeenCalledWith({
+      where: { id: 'newer' },
+      data: { possibleDuplicateOfId: 'older' },
+    });
   });
 
   it('shouldSendToTelegram', async () => {

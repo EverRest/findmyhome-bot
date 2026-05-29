@@ -3,6 +3,23 @@ import { resolveListingLink } from '../../listing/domain/resolve-listing-link';
 import { formatSourceLine } from '../../listing/domain/listing-source';
 import { formatDistanceM } from '../../scoring/domain/geo.utils';
 
+function formatPossibleDuplicateLine(item: ListingForDigest): string | null {
+  const primary = item.possibleDuplicateOf;
+  if (!primary) return null;
+  const label =
+    primary.title?.trim() ||
+    formatSourceLine(primary.source, null, primary.canonicalUrl) ||
+    'earlier listing';
+  const link = resolveListingLink({
+    canonicalUrl: primary.canonicalUrl,
+    listingUrl: null,
+  });
+  if (link) {
+    return `↔️ Possible duplicate (same address/rent/rooms): ${label}\n   ${link}`;
+  }
+  return `↔️ Possible duplicate (same address/rent/rooms): ${label}`;
+}
+
 export interface FormatListingCardOptions {
   referencePointName?: string | null;
 }
@@ -25,6 +42,8 @@ export function formatListingCard(
   const loc = item.locationHint ?? '';
 
   lines.push(`${risk}🏠 ${item.score}/100 — ${title}`);
+  const duplicateLine = formatPossibleDuplicateLine(item);
+  if (duplicateLine) lines.push(duplicateLine);
   lines.push([rooms, area, loc].filter(Boolean).join(', '));
 
   const priceParts: string[] = [];

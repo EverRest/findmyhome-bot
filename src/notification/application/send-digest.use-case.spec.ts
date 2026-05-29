@@ -81,7 +81,7 @@ describe('SendDigestUseCase', () => {
     expect(sent).toBe(1);
   });
 
-  it('sends only one Telegram card per property fingerprint', async () => {
+  it('sends both listings when same fingerprint (duplicate marked on card)', async () => {
     telegram.isConfigured.mockReturnValue(true);
     const fp = 'via-prali-2|r3|a60|€600';
     listings.findTopForDigest.mockResolvedValue([
@@ -96,6 +96,7 @@ describe('SendDigestUseCase', () => {
         rooms: 3,
         locationHint: 'Via Prali, 2, Cenisia, Torino',
         listingFingerprint: fp,
+        possibleDuplicateOf: null,
         score: 59,
         riskLevel: 'none',
         reasons: [],
@@ -113,6 +114,12 @@ describe('SendDigestUseCase', () => {
         rooms: 3,
         locationHint: 'via Prali 2, Cenisia, Turin',
         listingFingerprint: fp,
+        possibleDuplicateOf: {
+          id: 'idealista',
+          source: 'idealista',
+          canonicalUrl: 'https://www.idealista.it/immobile/35847065/',
+          title: 'Trilocale in Via Prali, 2',
+        },
         score: 59,
         riskLevel: 'none',
         reasons: [],
@@ -126,7 +133,7 @@ describe('SendDigestUseCase', () => {
       listingsNew: 0,
       duplicatesSkipped: 0,
     });
-    expect(sent).toBe(1);
+    expect(sent).toBe(2);
   });
 
   it('returns 0 when telegram not configured', async () => {

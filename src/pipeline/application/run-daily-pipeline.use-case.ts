@@ -81,6 +81,14 @@ export class RunDailyPipelineUseCase {
         { since: fbSince.toISOString() },
       );
 
+      const possibleDuplicatesLinked =
+        await this.listings.reconcilePossibleDuplicates();
+      if (possibleDuplicatesLinked > 0) {
+        this.log.info('pipeline', 'Possible duplicates linked', {
+          updated: possibleDuplicatesLinked,
+        });
+      }
+
       const scored = await this.log.timed(
         'pipeline',
         '3/4 Score listings',
