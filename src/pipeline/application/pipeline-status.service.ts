@@ -11,6 +11,7 @@ import type { TelegramQueuePort } from '../../notification/queue/telegram-queue.
 import { isBullmqEnabled } from '../../notification/queue/bullmq.config';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
+import { parseFacebookGroupIds } from '../../facebook-ingestion/domain/parse-facebook-group-ids';
 
 @Injectable()
 export class PipelineStatusService {
@@ -115,10 +116,9 @@ export class PipelineStatusService {
       this.config.get<string>('FACEBOOK_STORAGE_STATE_PATH') ??
       './secrets/facebook-storage.json';
     const fbStorageExists = existsSync(resolve(process.cwd(), fbStorage));
-    const fbGroupIds = (this.config.get<string>('FACEBOOK_GROUP_IDS') ?? '')
-      .split(/[,\s]+/)
-      .map((s) => s.trim())
-      .filter((s) => /^\d+$/.test(s));
+    const fbGroupIds = parseFacebookGroupIds(
+      this.config.get<string>('FACEBOOK_GROUP_IDS') ?? '',
+    );
 
     return {
       integrations: {

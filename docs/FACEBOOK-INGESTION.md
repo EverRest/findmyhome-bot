@@ -29,6 +29,18 @@ curl -X POST http://localhost:3000/pipeline/run -H "x-api-key: YOUR_KEY"
 
 Posts matching student-only patterns (e.g. `studenti`, `solo studenti`, `posto letto`, `Erasmus`) are **skipped** and not stored. This matches the family-with-child search in `config/criteria.yaml`.
 
+## Test feed (dry-run + optional live)
+
+```bash
+# Parser + HTML extract on fixtures (no browser)
+npm run facebook:test-feed
+
+# Live scrape (requires facebook:login first)
+npm run facebook:test-feed -- --live --group 946456072043414
+```
+
+Group IDs can be **numeric** or **slug** (`torino.affitti...`).
+
 ## Status
 
 ```bash

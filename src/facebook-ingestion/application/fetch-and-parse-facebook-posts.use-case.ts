@@ -8,6 +8,7 @@ import type { FacebookGroupsPort } from '../domain/facebook-groups.port';
 import { FacebookRentalPostParser } from '../infrastructure/facebook-rental-post.parser';
 import { meetsHardCriteria } from '../../listing/domain/listing-hard-criteria';
 import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
+import { parseFacebookGroupIds } from '../domain/parse-facebook-group-ids';
 import {
   isStudentHousingPost,
   shouldPersistFacebookListing,
@@ -143,10 +144,7 @@ export class FetchAndParseFacebookPostsUseCase {
 
   private parseGroupIds(): string[] {
     const raw = this.config.get<string>('FACEBOOK_GROUP_IDS') ?? '';
-    return raw
-      .split(/[,\s]+/)
-      .map((s) => s.trim())
-      .filter((s) => /^\d+$/.test(s));
+    return parseFacebookGroupIds(raw);
   }
 
   private emptyResult(): FetchFacebookResult {

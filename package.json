@@ -21,6 +21,7 @@
     "debug:idealista": "ts-node -r dotenv/config scripts/debug-idealista-email.ts",
     "facebook:login": "ts-node -r dotenv/config scripts/facebook-login.ts",
     "facebook:probe": "ts-node -r dotenv/config scripts/facebook-graph-probe.ts",
+    "facebook:test-feed": "ts-node -r dotenv/config scripts/facebook-test-feed.ts",
     "db:rescore": "ts-node -r dotenv/config scripts/rescore-listings.ts",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
