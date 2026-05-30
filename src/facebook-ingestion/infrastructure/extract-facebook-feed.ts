@@ -66,7 +66,9 @@ function parsePostChunk(
   const hrefMatch = chunk.match(
     new RegExp(`href="([^"]*?/groups/${groupId}/posts/${postId}[^"]*)"`, 'i'),
   );
-  const message = stripHtml(chunk).replace(/\s+/g, ' ').trim().slice(0, 4000);
+  const message = truncateBeforeComments(
+    stripHtml(chunk).replace(/\s+/g, ' ').trim().slice(0, 4000),
+  );
 
   return {
     postId,
@@ -96,6 +98,22 @@ function normalizePermalink(
     return `https://www.facebook.com${href.split('?')[0]}`;
   }
   return `https://www.facebook.com/groups/${groupId}/posts/${postId}/`;
+}
+
+function truncateBeforeComments(text: string): string {
+  const markers = [
+    /\bLike\s+Reply\b/i,
+    /\bLike\s*·\s*Comment\b/i,
+    /\bSee translation\b/i,
+    /\bView all \d+ repl/i,
+    /\bWrite a public comment\b/i,
+  ];
+  let cut = text;
+  for (const re of markers) {
+    const idx = cut.search(re);
+    if (idx > 30) cut = cut.slice(0, idx);
+  }
+  return cut.trim();
 }
 
 function stripHtml(html: string): string {

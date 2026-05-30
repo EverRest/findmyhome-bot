@@ -12,6 +12,7 @@ import { meetsHardCriteria } from '../../listing/domain/listing-hard-criteria';
 import { CriteriaLoaderService } from '../../shared/infrastructure/criteria-loader.service';
 import { formatListingCard } from './format-listing-card';
 import { isMeaningfulListingTitle } from '../../email-ingestion/infrastructure/parsers/casa-alert.utils';
+import { isEligibleFacebookDigestListing } from '../../facebook-ingestion/infrastructure/facebook-rental-post.utils';
 import { isTelegramRateLimitError } from '../infrastructure/telegram-api.utils';
 import { TELEGRAM_QUEUE_PORT } from '../queue/telegram-queue.port';
 import type { TelegramQueuePort } from '../queue/telegram-queue.port';
@@ -73,6 +74,18 @@ export class SendDigestUseCase {
           title: item.title,
           rentEur: item.rentEur,
           areaSqm: item.areaSqm,
+        });
+        continue;
+      }
+      if (
+        item.source === 'facebook.group' &&
+        !isEligibleFacebookDigestListing(item)
+      ) {
+        skippedAlreadySent++;
+        this.log.debug('telegram', 'Skip — incomplete Facebook listing', {
+          id: item.id,
+          title: item.title,
+          rentEur: item.rentEur,
         });
         continue;
       }

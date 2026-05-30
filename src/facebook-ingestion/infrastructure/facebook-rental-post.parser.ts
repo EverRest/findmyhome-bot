@@ -9,13 +9,14 @@ import {
   extractSqm,
 } from '../../email-ingestion/infrastructure/parsers/url.utils';
 import { isListingPageUrl } from '../../email-ingestion/infrastructure/parsers/listing-url.utils';
+import { cleanFacebookMessage } from './facebook-rental-post.utils';
 
 const PORTAL_HOST = /idealista\.|immobiliare\.|casa\.it|subito\.it|fotocasa\./i;
 
 @Injectable()
 export class FacebookRentalPostParser {
   parse(post: IncomingFacebookPost): ListingDraft[] {
-    const text = post.message.replace(/\s+/g, ' ').trim();
+    const text = cleanFacebookMessage(post.message.replace(/\s+/g, ' ').trim());
     if (!text && !post.permalink) return [];
 
     const drafts: ListingDraft[] = [];
@@ -45,11 +46,12 @@ export class FacebookRentalPostParser {
     post: IncomingFacebookPost,
     listingUrl: string,
   ): ListingDraft {
+    const cleaned = cleanFacebookMessage(post.message);
     const firstLine =
-      post.message
-        .split('\n')
-        .find((l) => l.trim().length > 5)
-        ?.trim() ?? post.message.slice(0, 120);
+      cleaned
+        .split(/[.\n]/)
+        .map((l) => l.trim())
+        .find((l) => l.length > 10) ?? cleaned.slice(0, 120);
 
     return {
       canonicalUrl,

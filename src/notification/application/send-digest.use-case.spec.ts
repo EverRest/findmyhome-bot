@@ -36,6 +36,54 @@ describe('SendDigestUseCase', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  it('skips incomplete Facebook comment-thread listings', async () => {
+    telegram.isConfigured.mockReturnValue(true);
+    listings.findTopForDigest.mockResolvedValue([
+      {
+        id: 'fb-bad',
+        canonicalUrl:
+          'https://www.facebook.com/groups/946456072043414/posts/28024420223820299/',
+        listingUrl:
+          'https://www.facebook.com/groups/946456072043414/posts/28024420223820299/',
+        source: 'facebook.group',
+        title:
+          'Elle Pillosu Ciao Leonardo. Mia mamma ha un bilocale Like Reply See translation Share',
+        rentEur: null,
+        areaSqm: null,
+        rooms: null,
+        locationHint: null,
+        score: 47,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+      {
+        id: 'ok',
+        canonicalUrl: 'https://www.idealista.it/immobile/1/',
+        listingUrl: 'https://www.idealista.it/immobile/1/',
+        source: 'idealista',
+        title: 'Bilocale',
+        rentEur: 750,
+        areaSqm: 70,
+        rooms: 2,
+        locationHint: 'Cenisia',
+        score: 60,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+    ]);
+    listings.shouldSendToTelegram.mockResolvedValue(true);
+
+    const sent = await useCase.execute({
+      listingsNew: 1,
+      duplicatesSkipped: 0,
+    });
+    expect(sent).toBe(1);
+  });
+
   it('skips listings outside hard digest limits (1 room, tiny area, rent > 800)', async () => {
     telegram.isConfigured.mockReturnValue(true);
     listings.findTopForDigest.mockResolvedValue([
