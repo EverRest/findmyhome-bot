@@ -85,4 +85,40 @@ describe('NominatimAdapter', () => {
       await adapter.geocode('Via Roma 1', { minIntervalMs: 0 }),
     ).toBeNull();
   });
+
+  it('returns null when coordinates are not numeric', async () => {
+    config.get.mockImplementation((key: string) => {
+      if (key === 'NOMINATIM_USER_AGENT')
+        return 'FindMyHome/1.0 (test@test.com)';
+      return 'https://nominatim.openstreetmap.org';
+    });
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => [{ lat: 'bad', lon: '7.642' }],
+    });
+    const adapter = new NominatimAdapter(config as never, log as never);
+    expect(
+      await adapter.geocode('Via Roma 1', { minIntervalMs: 0 }),
+    ).toBeNull();
+  });
+
+  it('throttles rapid consecutive requests', async () => {
+    jest.useFakeTimers();
+    config.get.mockImplementation((key: string) => {
+      if (key === 'NOMINATIM_USER_AGENT')
+        return 'FindMyHome/1.0 (test@test.com)';
+      return 'https://nominatim.openstreetmap.org';
+    });
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => [{ lat: '45.079', lon: '7.642' }],
+    });
+    const adapter = new NominatimAdapter(config as never, log as never);
+    const first = adapter.geocode('Via Roma 1', { minIntervalMs: 1000 });
+    const second = adapter.geocode('Via Roma 2', { minIntervalMs: 1000 });
+    await jest.runAllTimersAsync();
+    await Promise.all([first, second]);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    jest.useRealTimers();
+  });
 });

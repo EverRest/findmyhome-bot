@@ -2,6 +2,7 @@ import {
   applyProximityToLlmResult,
   compositeScoreFromCriteria,
   injectProximityScore,
+  isLlmRatingKey,
   parseCriteriaScores,
   parseLlmRatingResponse,
 } from './llm-rating.parser';
@@ -58,5 +59,14 @@ describe('llm-rating.parser', () => {
     expect(scores.budgetFit).toBe(10);
     expect(scores.sizeForFamily).toBe(0);
     expect(injectProximityScore(scores, 11).proximityToReference).toBe(10);
+  });
+
+  it('returns null when LLM response has no criteria values', () => {
+    expect(parseLlmRatingResponse({ summary: 'empty' }, defs)).toBeNull();
+  });
+
+  it('validates llm rating keys', () => {
+    expect(isLlmRatingKey('budgetFit')).toBe(true);
+    expect(isLlmRatingKey('unknownKey')).toBe(false);
   });
 });

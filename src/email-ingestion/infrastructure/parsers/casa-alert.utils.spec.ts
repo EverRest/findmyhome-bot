@@ -47,4 +47,12 @@ describe('buildCasaListingTitle', () => {
       }),
     ).toBe('Affitto 550 €/mese');
   });
+
+  it('returns undefined when no meaningful title fields exist', () => {
+    expect(
+      buildCasaListingTitle({
+        title: 'Vedi foto',
+      }),
+    ).toBeUndefined();
+  });
 });

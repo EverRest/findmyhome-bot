@@ -88,4 +88,15 @@ describe('OllamaAdapter', () => {
     const r = await noRating.assessListing({ canonicalUrl: 'https://x' });
     expect(r).toBeNull();
   });
+
+  it('returns null when parsed response has no criteria scores', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        response: JSON.stringify({ summary: 'empty', riskLevel: 'none' }),
+      }),
+    } as Response);
+    const r = await adapter.assessListing({ canonicalUrl: 'https://x' });
+    expect(r).toBeNull();
+  });
 });

@@ -161,6 +161,12 @@ describe('facebook-rental-post.utils', () => {
     ).toBe(false);
   });
 
+  it('detects feed noise in raw scraped text', () => {
+    const noise =
+      'Trilocale 80mq 750€ Cenisia affitto 6d Like Reply See translation Share';
+    expect(isFacebookFeedNoise(noise)).toBe(true);
+  });
+
   it('accepts permalink FB post with rent and facts', () => {
     const post =
       'Affitto bilocale 65mq in Cenisia, 650€/mese, 2 locali, disponibile subito';

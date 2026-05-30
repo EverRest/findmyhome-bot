@@ -1,4 +1,4 @@
-import { SchedulerRegistry } from '@nestjs/schedule';
+import { CronJob } from 'cron';
 import { PipelineCron } from './pipeline.cron';
 import { mockConfig, mockStepLogger } from '../../../test/helpers/test-utils';
 
@@ -10,12 +10,14 @@ jest.mock('cron', () => ({
   })),
 }));
 
+const CronJobMock = CronJob as unknown as jest.Mock;
+
 describe('PipelineCron', () => {
   const runPipeline = { execute: jest.fn().mockResolvedValue({}) };
   const log = mockStepLogger();
   const schedulerRegistry = {
     addCronJob: jest.fn(),
-  } as unknown as SchedulerRegistry;
+  };
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -48,7 +50,7 @@ describe('PipelineCron', () => {
         PIPELINE_CRON_ENABLED: 'true',
         CRON_EXPRESSION: '0 */3 * * *',
       }),
-      schedulerRegistry,
+      schedulerRegistry as never,
       log as never,
     );
     cron.onModuleInit();
@@ -61,11 +63,37 @@ describe('PipelineCron', () => {
     });
   });
 
+  it('runs pipeline when cron job callback fires', async () => {
+    const cron = new PipelineCron(
+      runPipeline as never,
+      mockConfig({ PIPELINE_CRON_ENABLED: 'true' }),
+      schedulerRegistry as never,
+      log as never,
+    );
+    cron.onModuleInit();
+    const onTick = CronJobMock.mock.calls[0][1] as () => Promise<void>;
+    await onTick();
+    expect(runPipeline.execute).toHaveBeenCalled();
+  });
+
+  it('uses default cron expression when CRON_EXPRESSION is blank', () => {
+    const cron = new PipelineCron(
+      runPipeline as never,
+      mockConfig({ PIPELINE_CRON_ENABLED: 'true', CRON_EXPRESSION: '   ' }),
+      schedulerRegistry as never,
+      log as never,
+    );
+    cron.onModuleInit();
+    expect(log._ctx.step).toHaveBeenCalledWith('pipeline', 'Cron scheduled', {
+      expression: '0 */3 * * *',
+    });
+  });
+
   it('runs pipeline when enabled', async () => {
     const cron = new PipelineCron(
       runPipeline as never,
       mockConfig({ PIPELINE_CRON_ENABLED: 'true' }),
-      schedulerRegistry,
+      schedulerRegistry as never,
       log as never,
     );
     await cron.handleCron();

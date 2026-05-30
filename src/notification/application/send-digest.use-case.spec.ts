@@ -1,6 +1,7 @@
 import { SendDigestUseCase } from './send-digest.use-case';
 import type { TelegramSendJob } from '../queue/telegram-send-job';
 import {
+  loadTestCriteria,
   mockConfig,
   mockCriteriaLoader,
   mockStepLogger,
@@ -342,6 +343,48 @@ describe('SendDigestUseCase', () => {
     const n = await useCase.execute({ listingsNew: 0, duplicatesSkipped: 0 });
     expect(n).toBe(0);
     expect(telegram.sendText).not.toHaveBeenCalled();
+  });
+
+  it('skips rent below digest threshold when hard criteria still pass', async () => {
+    const relaxedCriteria = mockCriteriaLoader({
+      ...loadTestCriteria(),
+      hard: {
+        ...loadTestCriteria().hard,
+        rentMinEur: 100,
+        rentMaxEur: 1000,
+      },
+    });
+    const digestUseCase = new SendDigestUseCase(
+      listings as never,
+      telegram,
+      telegramQueue,
+      mockConfig({ PIPELINE_DRY_RUN: 'true', MIN_DIGEST_RENT_EUR: '300' }),
+      relaxedCriteria as never,
+      log as never,
+    );
+    telegram.isConfigured.mockReturnValue(true);
+    listings.findTopForDigest.mockResolvedValue([
+      {
+        id: 'low-rent',
+        canonicalUrl: 'https://www.idealista.it/immobile/1/',
+        listingUrl: 'https://www.idealista.it/immobile/1/',
+        source: 'idealista',
+        title: 'Flat',
+        rentEur: 250,
+        areaSqm: 70,
+        rooms: 2,
+        locationHint: 'Cenisia',
+        score: 80,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+    ]);
+    listings.shouldSendToTelegram.mockResolvedValue(true);
+    expect(
+      await digestUseCase.execute({ listingsNew: 0, duplicatesSkipped: 0 }),
+    ).toBe(0);
   });
 
   it('skips low score and rent and already sent', async () => {

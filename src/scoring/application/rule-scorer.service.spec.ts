@@ -159,4 +159,20 @@ describe('RuleScorerService', () => {
     });
     expect(result.reasons.some((r) => r.includes('Piazza Bernini'))).toBe(true);
   });
+
+  it('adds proximity reason without distance when meters unknown', () => {
+    const result = service.score({
+      draft: {
+        canonicalUrl: 'https://example.com/p2',
+        rentEur: 750,
+        areaSqm: 72,
+        rooms: 2,
+        locationHint: 'Cenisia',
+      },
+      snippet: '',
+      proximityScore: 8,
+      referenceName: 'Piazza Bernini',
+    });
+    expect(result.reasons.some((r) => r.includes('proximity 8/10'))).toBe(true);
+  });
 });

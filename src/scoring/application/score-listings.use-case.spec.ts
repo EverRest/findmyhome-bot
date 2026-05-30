@@ -239,4 +239,127 @@ describe('ScoreListingsUseCase', () => {
     const reasons = JSON.parse(createArg.data.reasons) as string[];
     expect(reasons.some((r) => r.includes('Test Anchor'))).toBe(true);
   });
+
+  it('skips listings that fail hard criteria', async () => {
+    prisma.listing.findMany.mockResolvedValue([
+      {
+        id: 'tiny',
+        canonicalUrl: 'https://x/tiny',
+        title: 'Monolocale',
+        locationHint: 'Torino',
+        rentEur: 800,
+        areaSqm: 27,
+        rooms: 1,
+        rawSnippet: '',
+        lastSeenAt: new Date(),
+        scores: [],
+        ...listingBase,
+      },
+    ]);
+    expect(await useCase.execute()).toBe(0);
+    expect(prisma.listingScore.create).not.toHaveBeenCalled();
+  });
+
+  it('counts geocode misses when proximity enabled', async () => {
+    const geocodeEnabled = {
+      isProximityEnabled: jest.fn().mockReturnValue(true),
+      resolveProximity: jest.fn().mockResolvedValue({
+        lat: null,
+        lng: null,
+        geocodeSource: null,
+        distanceM: null,
+        proximityScore: null,
+      }),
+    };
+    const proximityUseCase = new ScoreListingsUseCase(
+      prisma as never,
+      rules,
+      ollama as never,
+      geocodeEnabled as never,
+      mockCriteriaLoader() as never,
+      mockConfig({ OLLAMA_SCORING_ENABLED: 'false' }),
+      mockStepLogger() as never,
+    );
+    prisma.listing.findMany.mockResolvedValue([
+      {
+        id: 'missing-geo',
+        canonicalUrl: 'https://x/geo',
+        title: 'Flat',
+        locationHint: 'Cenisia',
+        rentEur: 800,
+        areaSqm: 70,
+        rooms: 2,
+        rawSnippet: '',
+        lastSeenAt: new Date(),
+        scores: [],
+        ...listingBase,
+      },
+    ]);
+    expect(await proximityUseCase.execute()).toBe(1);
+  });
+
+  it('merges LLM proximity and elevates high risk', async () => {
+    const geocodeEnabled = {
+      isProximityEnabled: jest.fn().mockReturnValue(true),
+      resolveProximity: jest.fn().mockResolvedValue({
+        lat: 45.079,
+        lng: 7.642,
+        geocodeSource: 'nominatim',
+        distanceM: 200,
+        proximityScore: 9,
+      }),
+    };
+    const llmUseCase = new ScoreListingsUseCase(
+      prisma as never,
+      rules,
+      {
+        assessListing: jest.fn().mockResolvedValue({
+          compositeScore: 70,
+          criteria: {
+            budgetFit: 8,
+            sizeForFamily: 8,
+            targetZone: 8,
+            dataComplete: 8,
+            costClarity: 8,
+            notStudentShared: 8,
+            layoutFit: 8,
+            listingTrust: 8,
+            descriptionQuality: 8,
+            proximityToReference: 0,
+          },
+          displayReasons: ['🤖 AI (70/100): test'],
+          summary: 'Risky',
+          riskLevel: 'high',
+          riskReasons: ['suspicious contact'],
+        }),
+      } as never,
+      geocodeEnabled as never,
+      mockCriteriaLoader() as never,
+      mockConfig({ OLLAMA_SCORING_ENABLED: 'true' }),
+      mockStepLogger() as never,
+    );
+    prisma.listing.findMany.mockResolvedValue([
+      {
+        id: 'llm-risk',
+        canonicalUrl: 'https://x/risk',
+        title: 'Flat',
+        locationHint: 'Cenisia',
+        rentEur: 800,
+        areaSqm: 70,
+        rooms: 2,
+        rawSnippet: '',
+        lastSeenAt: new Date(),
+        scores: [],
+        ...listingBase,
+      },
+    ]);
+    await llmUseCase.execute();
+    const createArg = prisma.listingScore.create.mock.calls[0][0] as {
+      data: { riskLevel: string; riskReasons: string };
+    };
+    expect(createArg.data.riskLevel).toBe('high');
+    expect(JSON.parse(createArg.data.riskReasons)).toContain(
+      'suspicious contact',
+    );
+  });
 });

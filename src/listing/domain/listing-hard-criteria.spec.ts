@@ -95,4 +95,20 @@ describe('meetsHardCriteria', () => {
       ),
     ).toBe(true);
   });
+
+  it('rejects when rent plus condo fee exceeds total cost max', () => {
+    expect(
+      meetsHardCriteria(
+        {
+          title: 'Bilocale',
+          locationHint: 'Cenisia, Torino',
+          rooms: 2,
+          areaSqm: 70,
+          rentEur: 800,
+          condoFeeEur: 400,
+        },
+        criteria,
+      ),
+    ).toBe(false);
+  });
 });

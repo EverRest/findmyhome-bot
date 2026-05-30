@@ -110,4 +110,26 @@ describe('RunDailyPipelineUseCase', () => {
       }),
     );
   });
+
+  it('logs when possible duplicates are linked', async () => {
+    prisma.pipelineRun.create.mockResolvedValue({ id: 'run4' });
+    prisma.pipelineRun.update.mockResolvedValue({});
+    fetchEmails.execute.mockResolvedValue({
+      emailsProcessed: 0,
+      listingsParsed: 0,
+      listingsNew: 0,
+      duplicatesSkipped: 0,
+      emailsSkippedAlreadyProcessed: 0,
+    });
+    listings.reconcilePossibleDuplicates.mockResolvedValue(2);
+    scoreListings.execute.mockResolvedValue(0);
+    sendDigest.execute.mockResolvedValue(0);
+
+    await useCase.execute();
+    expect(log._ctx.info).toHaveBeenCalledWith(
+      'pipeline',
+      'Possible duplicates linked',
+      { updated: 2 },
+    );
+  });
 });

@@ -41,6 +41,9 @@ describe('listing-source', () => {
         'https://www.facebook.com/groups/1/posts/2/',
       ),
     ).toContain('Facebook');
+    expect(formatSourceLine('facebook.group', '/groups/1/posts/2/', null)).toBe(
+      '📌 Facebook group',
+    );
   });
 
   it('handles invalid urls and short hosts', () => {

@@ -26,6 +26,52 @@ describe('PrismaListingRepository', () => {
     expect(prisma.processedEmail.create).toHaveBeenCalled();
   });
 
+  it('tracks processed facebook posts', async () => {
+    prisma.processedFacebookPost.findUnique.mockResolvedValue({ id: 'fb1' });
+    expect(await repo.existsProcessedFacebookPost('fb-post-1')).toBe(true);
+    prisma.processedFacebookPost.findUnique.mockResolvedValue(null);
+    expect(await repo.existsProcessedFacebookPost('fb-post-2')).toBe(false);
+
+    await repo.markFacebookPostProcessed('fb-post-3', {
+      groupId: '123',
+      permalink: 'https://www.facebook.com/groups/123/posts/1/',
+      message: 'Affitto bilocale',
+      postedAt: new Date('2026-05-01T00:00:00.000Z'),
+      listingsFound: 1,
+    });
+    expect(prisma.processedFacebookPost.create).toHaveBeenCalled();
+  });
+
+  it('reconciles property match group after create', async () => {
+    prisma.listing.findUnique.mockResolvedValue(null);
+    prisma.listing.findFirst.mockResolvedValue(null);
+    prisma.listing.create.mockResolvedValue({ id: 'new-id' });
+    prisma.listing.findMany.mockResolvedValue([
+      {
+        id: 'older',
+        firstSeenAt: new Date('2020-01-01T00:00:00.000Z'),
+        possibleDuplicateOfId: null,
+      },
+      {
+        id: 'new-id',
+        firstSeenAt: new Date('2026-01-01T00:00:00.000Z'),
+        possibleDuplicateOfId: null,
+      },
+    ]);
+    prisma.listing.update.mockResolvedValue({});
+
+    await repo.upsertFromDraft({
+      canonicalUrl: 'https://www.idealista.it/immobile/999/',
+      title: 'Bilocale via Roma 1, Torino',
+      locationHint: 'via Roma 1, Torino',
+      rentEur: 600,
+      rooms: 2,
+      areaSqm: 70,
+    });
+
+    expect(prisma.listing.update).toHaveBeenCalled();
+  });
+
   it('upsertFromDraft creates new', async () => {
     prisma.listing.findUnique.mockResolvedValue(null);
     prisma.listing.findFirst.mockResolvedValue(null);

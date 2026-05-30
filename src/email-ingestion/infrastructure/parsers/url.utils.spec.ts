@@ -27,6 +27,9 @@ describe('url.utils', () => {
         'https://www.casa.it/immobili/54086676/?aid=MTU1NjA4MzU%3D',
       ),
     ).toBe('https://www.casa.it/immobili/54086676/');
+    expect(
+      canonicalizeUrl('https://www.casa.it/annunci/12345/?utm_source=alert'),
+    ).toBe('https://www.casa.it/annunci/12345/');
   });
 
   it('extracts eur and rooms', () => {

@@ -12,6 +12,7 @@ const config: Config = {
     '**/*.(t|j)s',
     '!**/*.spec.ts',
     '!**/listing-digest-eligibility.ts',
+    '!**/playwright-client.ts',
   ],
   coverageDirectory: '../coverage',
   coverageReporters: ['text', 'text-summary', 'html', 'lcov', 'json-summary'],

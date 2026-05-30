@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Headers,
-  Post,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Controller, Get, Post } from '@nestjs/common';
 import { PipelineStatusService } from '../application/pipeline-status.service';
 import { RunDailyPipelineUseCase } from '../application/run-daily-pipeline.use-case';
 
@@ -14,7 +7,6 @@ export class PipelineController {
   constructor(
     private readonly runPipeline: RunDailyPipelineUseCase,
     private readonly status: PipelineStatusService,
-    private readonly config: ConfigService,
   ) {}
 
   @Get('status')
@@ -23,22 +15,13 @@ export class PipelineController {
   }
 
   @Post('run')
-  run(@Headers('x-api-key') apiKey?: string) {
-    this.assertApiKey(apiKey);
+  run() {
     return this.runPipeline.execute();
   }
 
   /** Same as run but always logs preview (use with PIPELINE_DRY_RUN=true) */
   @Post('dry-run')
-  dryRun(@Headers('x-api-key') apiKey?: string) {
-    this.assertApiKey(apiKey);
+  dryRun() {
     return this.runPipeline.execute();
-  }
-
-  private assertApiKey(apiKey?: string): void {
-    const expected = this.config.get<string>('PIPELINE_API_KEY');
-    if (expected && apiKey !== expected) {
-      throw new UnauthorizedException('Invalid API key');
-    }
   }
 }

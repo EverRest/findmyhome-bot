@@ -1,4 +1,7 @@
-import { computeListingFingerprint } from './listing-fingerprint';
+import {
+  computeListingFingerprint,
+  normalizeStreetKey,
+} from './listing-fingerprint';
 
 describe('computeListingFingerprint', () => {
   it('matches Immobiliare and Idealista titles for same flat', () => {
@@ -56,5 +59,26 @@ describe('computeListingFingerprint', () => {
       areaSqm: 60,
     });
     expect(a).not.toBe(b);
+  });
+
+  it('normalizes inline and comma street formats', () => {
+    expect(normalizeStreetKey('bilocale in via prali 2 cenisia torino')).toBe(
+      'via-prali-2',
+    );
+    expect(normalizeStreetKey('trilocale via roma, 5 torino')).toBe(
+      'via-roma-5',
+    );
+    expect(normalizeStreetKey('via garibaldi torino')).toBe('via-garibaldi');
+  });
+
+  it('returns null for low rent values', () => {
+    expect(
+      computeListingFingerprint({
+        title: 'Bilocale via Roma 1, Torino',
+        rentEur: 50,
+        rooms: 2,
+        areaSqm: 70,
+      }),
+    ).toBeNull();
   });
 });
