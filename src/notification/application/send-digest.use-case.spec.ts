@@ -36,6 +36,56 @@ describe('SendDigestUseCase', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  it('skips incomplete Casa listings', async () => {
+    telegram.isConfigured.mockReturnValue(true);
+    listings.findTopForDigest.mockResolvedValue([
+      {
+        id: 'casa-bad',
+        canonicalUrl: 'https://www.casa.it/annunci/1/',
+        listingUrl: 'https://www.casa.it/annunci/1/',
+        source: 'casa.it',
+        title: 'x',
+        rentEur: null,
+        areaSqm: null,
+        rooms: 2,
+        locationHint: null,
+        score: 80,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+      {
+        id: 'ok',
+        canonicalUrl: 'https://www.idealista.it/immobile/1/',
+        listingUrl: 'https://www.idealista.it/immobile/1/',
+        source: 'idealista',
+        title: 'Bilocale',
+        rentEur: 750,
+        areaSqm: 70,
+        rooms: 2,
+        locationHint: 'Cenisia',
+        score: 60,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+    ]);
+    listings.shouldSendToTelegram.mockResolvedValue(true);
+
+    const sent = await useCase.execute({
+      listingsNew: 1,
+      duplicatesSkipped: 0,
+    });
+    expect(sent).toBe(1);
+    expect(log._ctx.debug).toHaveBeenCalledWith(
+      'telegram',
+      'Skip — incomplete Casa listing',
+      expect.objectContaining({ id: 'casa-bad' }),
+    );
+  });
+
   it('skips incomplete Facebook comment-thread listings', async () => {
     telegram.isConfigured.mockReturnValue(true);
     listings.findTopForDigest.mockResolvedValue([
@@ -218,6 +268,51 @@ describe('SendDigestUseCase', () => {
     listings.shouldSendToTelegram.mockResolvedValue(true);
     const n = await useCase.execute({ listingsNew: 1, duplicatesSkipped: 0 });
     expect(n).toBe(1);
+  });
+
+  it('skips listings below min score threshold', async () => {
+    telegram.isConfigured.mockReturnValue(true);
+    listings.findTopForDigest.mockResolvedValue([
+      {
+        id: 'low-score',
+        canonicalUrl: 'https://www.idealista.it/immobile/1/',
+        listingUrl: 'https://www.idealista.it/immobile/1/',
+        source: 'idealista',
+        title: 'Flat',
+        rentEur: 750,
+        areaSqm: 70,
+        rooms: 2,
+        locationHint: 'Cenisia',
+        score: 10,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+      {
+        id: 'ok',
+        canonicalUrl: 'https://www.idealista.it/immobile/2/',
+        listingUrl: 'https://www.idealista.it/immobile/2/',
+        source: 'idealista',
+        title: 'Flat 2',
+        rentEur: 750,
+        areaSqm: 70,
+        rooms: 2,
+        locationHint: 'Cenisia',
+        score: 80,
+        riskLevel: 'none',
+        reasons: [],
+        riskReasons: [],
+        aiSuggestion: null,
+      },
+    ]);
+    listings.shouldSendToTelegram.mockResolvedValue(true);
+
+    const sent = await useCase.execute({
+      listingsNew: 0,
+      duplicatesSkipped: 0,
+    });
+    expect(sent).toBe(1);
   });
 
   it('skips listings below min rent threshold', async () => {

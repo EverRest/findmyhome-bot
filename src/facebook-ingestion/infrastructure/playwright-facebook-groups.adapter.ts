@@ -9,6 +9,7 @@ import {
   extractPostsFromFeedHtml,
   toIncomingPost,
 } from './extract-facebook-feed';
+import { getChromium } from './playwright-client';
 
 @Injectable()
 export class PlaywrightFacebookGroupsAdapter implements FacebookGroupsPort {
@@ -39,7 +40,7 @@ export class PlaywrightFacebookGroupsAdapter implements FacebookGroupsPort {
       return [];
     }
 
-    const { chromium } = await import('playwright');
+    const chromium = await getChromium();
     const delayMs = Number(this.config.get('FACEBOOK_GROUP_DELAY_MS') ?? 3000);
     const maxScrolls = Number(this.config.get('FACEBOOK_MAX_SCROLLS') ?? 4);
     const results: IncomingFacebookPost[] = [];

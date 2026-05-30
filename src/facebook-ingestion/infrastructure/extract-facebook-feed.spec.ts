@@ -56,6 +56,52 @@ describe('extractPostsFromFeedHtml', () => {
     );
     expect(posts).toEqual([]);
   });
+
+  it('deduplicates fallback post links', () => {
+    const html = `
+      <a href="https://www.facebook.com/groups/999/posts/333444/">first</a>
+      <a href="https://www.facebook.com/groups/999/posts/333444/?ref=feed">dup</a>
+    `;
+    const posts = extractPostsFromFeedHtml(html, '999');
+    expect(posts).toHaveLength(1);
+    expect(posts[0].postId).toBe('333444');
+  });
+
+  it('builds default permalink when href is missing from article chunk', () => {
+    const posts = extractPostsFromFeedHtml(
+      `<div role="article">/groups/999/posts/888999/ Affitto bilocale</div>`,
+      '999',
+    );
+    expect(posts[0].permalink).toBe(
+      'https://www.facebook.com/groups/999/posts/888999/',
+    );
+  });
+
+  it('truncates comment UI from extracted message', () => {
+    const html = `
+      <div role="article">
+        <a href="/groups/999/posts/111222/">link</a>
+        <div>Affitto bilocale 800 euro zona Cenisia Like Reply See translation Share</div>
+      </div>
+    `;
+    const posts = extractPostsFromFeedHtml(html, '999');
+    expect(posts[0].message).toMatch(/Affitto bilocale 800 euro zona Cenisia/);
+    expect(posts[0].message).not.toMatch(/Like Reply/i);
+  });
+
+  it('decodes html entities in href and text', () => {
+    const html = `
+      <div role="article">
+        <a href="/groups/999/posts/444555/?q=1&amp;foo=bar">link</a>
+        <div>It&#39;s available &amp; ready</div>
+      </div>
+    `;
+    const posts = extractPostsFromFeedHtml(html, '999');
+    expect(posts[0].permalink).toBe(
+      'https://www.facebook.com/groups/999/posts/444555/',
+    );
+    expect(posts[0].message).toContain("It's available & ready");
+  });
 });
 
 describe('toIncomingPost', () => {

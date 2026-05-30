@@ -4,6 +4,7 @@ import {
   cleanFacebookMessage,
   isEligibleFacebookDigestListing,
   isFacebookFeedNoise,
+  isFacebookPermalinkDraft,
   isStudentHousingPost,
   looksLikeRentalPost,
   shouldPersistFacebookListing,
@@ -98,6 +99,66 @@ describe('facebook-rental-post.utils', () => {
     expect(cleanFacebookMessage(raw)).toBe(
       'Trilocale 80mq 750€ Cenisia affitto',
     );
+  });
+
+  it('rejects sale-only posts without affitto marker', () => {
+    expect(looksLikeRentalPost('Appartamento in vendita a Torino, 200mq')).toBe(
+      false,
+    );
+  });
+
+  it('detects empty feed noise as false', () => {
+    expect(isFacebookFeedNoise('')).toBe(false);
+    expect(isFacebookFeedNoise('   ')).toBe(false);
+  });
+
+  it('rejects digest listings missing area, rooms, and location', () => {
+    expect(
+      isEligibleFacebookDigestListing({
+        title: 'Affitto bilocale Cenisia 650 euro',
+        rentEur: 650,
+      }),
+    ).toBe(false);
+  });
+
+  it('rejects permalink drafts that do not look like rentals', () => {
+    expect(
+      shouldPersistFacebookListing(
+        {
+          canonicalUrl: 'https://www.facebook.com/groups/1/posts/2/',
+          title: 'Random community announcement about parking rules',
+        },
+        'Random community announcement about parking rules today',
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects high rent without monthly hint on permalink drafts', () => {
+    expect(
+      shouldPersistFacebookListing(
+        {
+          canonicalUrl: 'https://www.facebook.com/groups/1/posts/2/',
+          rentEur: 250_000,
+          areaSqm: 80,
+          rooms: 3,
+          title: 'Trilocale in vendita',
+        },
+        'Trilocale in vendita 250000 euro',
+      ),
+    ).toBe(false);
+  });
+
+  it('identifies facebook permalink drafts', () => {
+    expect(
+      isFacebookPermalinkDraft({
+        canonicalUrl: 'https://www.facebook.com/groups/1/posts/2/',
+      }),
+    ).toBe(true);
+    expect(
+      isFacebookPermalinkDraft({
+        canonicalUrl: 'https://www.idealista.it/immobile/1/',
+      }),
+    ).toBe(false);
   });
 
   it('accepts permalink FB post with rent and facts', () => {
